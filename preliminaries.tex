@@ -23,18 +23,18 @@ $Gx = X$ for some (or equivalently all) $x$ in $X$. An action $ρ$ is
 called free when it is injective. A principal $G$-space is a set
 equipped with a transitive free action of $G$.
 
-An affine space over a field $\k$ is $E$-principal space $X$ for some
+An affine space over a field $\k$ is principal $E$-space $X$ for some
 $k$-vector space $E$. We also say that $X$ is directed by $E$.
 Notations: the action of $v ∈ E$ on a point 
 $x ∈ X$ is denoted by $x + v$. Given $x$ and $y$, the unique $v$ in $E$
 such that $y = x + v$ is denoted by $y - x$.
 
+One could also define affine spaces without going through the general
+definition of group actions (spelling out everything in this special
+case).
+
 \section{Topological preliminaries}
 \label{sec:topological_preliminaries}
-
-A topological space is Hausdorff if any two points have disjoint
-neighborhoods. It is second-countable if its topology has a countable
-basis.
 
 A topological vector space $E$ over a topological field $\k$ is a
 $\k$-vector space equipped with a topology such that addition is
@@ -54,7 +54,8 @@ $‖λ x‖ =|λ| · ‖x‖$.
 Any two norms $‖·‖₁$ and $‖·‖₂$ on a finite dimensional real
 vector space are equivalent: there exists a positive real number $C$
 such that: $‖·‖₁/C ≤ ‖·‖₂ ≤ C‖·‖₁$ (this is not quite trivial, requires
-compactness…).
+compactness…). Although this result could be avoided, it would make
+everything clumsy, carrying out irrelevant choices of norms everywhere.
 
 To each norm $‖·‖$ one can associate a distance $d(x, y) = ‖x - y‖$, and
 then associated topology. In the case of finite dimensional vector
@@ -72,12 +73,12 @@ Let $X$ and $Y$ be two affine space directed by normed vector spaces
 $E$ and $F$. Let $U$ be an open subset of $X$. A map $f : U → Y$ is
 differentiable at $x ∈ U$ if there exists a continuous linear map 
 $L : E → F$ such that, for sufficiently small $v$,
-$f(x + v) = f(x) + Lv + ‖v‖ε(v)$ for some function $ε : E → F$ which
-goes to zero when $v$ goes to $0$ (let's pretend it would be reasonable
-not to define $o(v)$ notation). In this case, $L$ is unique, and denote
-by $Df(x)$. The map $f$ is differentiable on $X$ if it is differentiable
-at every $x$ in $X$. By induction, define $(k+1)$-times differentiable
-maps by $Df$ is $k$-times differentiable.
+$f(x + v) = f(x) + Lv + R(v)$ where $‖R(v)‖ = ‖v‖ε(v)$ for some function 
+$ε : E → ℝ$ which goes to zero when $v$ goes to $0$ (let's pretend it
+would be reasonable not to define $o(v)$ notation). In this case, $L$ is
+unique, and denote by $Df(x)$. The map $f$ is differentiable on $X$ if
+it is differentiable at every $x$ in $X$. By induction, define
+$(k+1)$-times differentiable maps by $Df$ is $k$-times differentiable.
 It is $C¹$ if $x ↦ Df(x)$ is continuous. By induction, a map is
 $C^{k+1}$ if $Df$ is $C^k$. It is smooth, or $C^∞$ if it is $C^k$ for
 all $k$. 
