@@ -1,3 +1,8 @@
+# Lean stuff
+*.olean
+/_target
+/leanpkg.path
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof

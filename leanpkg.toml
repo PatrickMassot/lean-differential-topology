@@ -1,0 +1,7 @@
+[package]
+name = "differential-topology"
+version = "0.1"
+lean_version = "master"
+
+[dependencies]
+mathlib = {git = "https://github.com/leanprover/mathlib", rev = "4f7835ebe2d634b68cf176877adb46441f8d9a9d"}
