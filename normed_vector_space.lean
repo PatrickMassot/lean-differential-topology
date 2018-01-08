@@ -50,9 +50,11 @@ def norm {E : Type*} [normed_space E] : E → ℝ := normed_space.norm E
 local notation `∥` e `∥` := norm e
 
 @[simp]
-lemma zero_norm' {E : Type*} [normed_space E] : ∥0∥ = 0 :=
+lemma zero_norm' {E : Type*} [normed_space E] : ∥(0:E)∥ = 0 :=
 sorry
 
+lemma norm_non_zero_of_non_zero {E : Type*} [normed_space E] (e : E) : e ≠ 0 → ∥ e ∥ ≠ 0 :=
+sorry 
 
 instance normed_space.to_metric_space {A : Type*} [An : normed_space A] : metric_space A :=
 metric_of_norm An.norm
@@ -100,8 +102,8 @@ variables {E : Type*} {F : Type*} {G : Type*} [normed_space E] [normed_space F] 
 def is_differential  (f : E → F) (a : E) (L : E → F) : Prop :=
 (is_continuous_linear_map L) ∧ (∃ ε : E → F, (∀ h, f (a + h) =  f a + L h + ∥h∥ • ε h) ∧  (ε →_{0} 0))
 
- set_option trace.check true
- set_option pp.all true
+-- set_option trace.check true
+-- set_option pp.all true
 
 theorem chain_rule (f : E → F) (g : F → G) (a : E) (L : E → F) (P : F → G)
 (D : is_differential f a L) (D' : is_differential g (f a) P) : is_differential (g ∘ f) a (P ∘ L) :=
@@ -109,19 +111,17 @@ begin
 rcases D with ⟨cont_lin_L, ε, TEf, lim_ε⟩,
 rcases D' with ⟨cont_lin_P, η, TEg, lim_η⟩,
 unfold is_differential,
+have cont_linPL := comp_continuous_linear_map L P cont_lin_L cont_lin_P,
 split,
-{ exact comp_continuous_linear_map L P cont_lin_L cont_lin_P },
-let δ : E → G,-- := λ h, P (ε h) + (∥ L h + ∥h∥•ε h ∥/∥h∥)• η (L h + ∥h∥•ε h),
+{ exact cont_linPL },
+let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥/∥h∥)• η (L h + ∥h∥•ε h),
 swap,
-existsi δ,
+{existsi δ,
 { split,
   { intro h,
     by_cases H : h = 0,
     { -- h = 0 case
-      simp [H],
-      rw [@zero_norm' E _], -- or variations that also don't work
-      
-      admit },
+      simp [H, cont_linPL.1.zero] },
     { -- h ≠ 0 case
       rcases cont_lin_P with ⟨lin_P , cont_P⟩,
        
@@ -131,19 +131,21 @@ existsi δ,
       ... = g (f a + (L h + ∥h∥ • ε h)) : by {simp, }
       ... = g (f a) + P (L h + ∥h∥ • ε h) + ∥ L h + ∥h∥ • ε h∥ • η (L h + ∥h∥ • ε h) : by rw TEg
       ... = g (f a) + P (L h) + ∥h∥ • P (ε h) + ∥ L h + ∥h∥ • ε h∥ • η (L h + ∥h∥ • ε h) : by { simp[lin_P.add, lin_P.smul] },
-
-  
-    repeat {rw add_assoc},
-    apply (congr_arg (λ x, g (f a) + (P (L h) + x))),
-    dsimp[δ], 
-    generalize : L h + ∥h∥ • ε h = R,
-    rw smul_add,
-    apply (congr_arg (λ x, ∥h∥ • P (ε h) + x)),
-    rw smul_smul,
-    congr,
-        
-    admit },
-  { admit }, },
+      
+      simp[δ, H, fact1], 
+      -- now we only need computing and h ≠ 0
+      clear fact1 lin_P cont_lin_L cont_P cont_linPL δ TEf TEg f g lim_ε lim_η a,
+      
+      rw[smul_add, smul_smul],
+      congr_n 1,
+      apply (congr_arg (λ x, x • η (L h + ∥h∥ • ε h))),
+            
+      rw [←mul_div_assoc, mul_comm, mul_div_cancel],
+      
+      exact norm_non_zero_of_non_zero h H },
+  }, 
+  { -- prove δ →_0 0
+    admit } } }
 end
 
 end differential
