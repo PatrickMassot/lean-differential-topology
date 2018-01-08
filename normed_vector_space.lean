@@ -5,6 +5,7 @@ import algebra.module
 import order.filter
 
 noncomputable theory
+local attribute [instance] classical.prop_decidable
 
 -- This will soon be bultin mathlib
 attribute [simp] abs_zero abs_neg
@@ -48,6 +49,11 @@ class normed_space (type : Type*) extends vector_space ℝ type :=
 def norm {E : Type*} [normed_space E] : E → ℝ := normed_space.norm E
 local notation `∥` e `∥` := norm e
 
+@[simp]
+lemma zero_norm' {E : Type*} [normed_space E] : ∥0∥ = 0 :=
+sorry
+
+
 instance normed_space.to_metric_space {A : Type*} [An : normed_space A] : metric_space A :=
 metric_of_norm An.norm
 
@@ -88,18 +94,6 @@ split,
 end
 end continuous_linear_maps
 
-section little_o
-variables {E : Type*} {F : Type*} {G : Type*} [normed_space E] [normed_space F] [normed_space G]
-variable e: E
-
-def at_pt {X : Type*} [topological_space X] (a : X)  := filter.inf (nhds a) (filter.principal (- {a}))
-#check at_pt e
-variables (U : set E) 
-#check is_open U
-
-end little_o
-
-
 section differential
 variables {E : Type*} {F : Type*} {G : Type*} [normed_space E] [normed_space F] [normed_space G]
 
@@ -107,7 +101,7 @@ def is_differential  (f : E → F) (a : E) (L : E → F) : Prop :=
 (is_continuous_linear_map L) ∧ (∃ ε : E → F, (∀ h, f (a + h) =  f a + L h + ∥h∥ • ε h) ∧  (ε →_{0} 0))
 
  set_option trace.check true
--- set_option pp.all true
+ set_option pp.all true
 
 theorem chain_rule (f : E → F) (g : F → G) (a : E) (L : E → F) (P : F → G)
 (D : is_differential f a L) (D' : is_differential g (f a) P) : is_differential (g ∘ f) a (P ∘ L) :=
@@ -117,22 +111,28 @@ rcases D' with ⟨cont_lin_P, η, TEg, lim_η⟩,
 unfold is_differential,
 split,
 { exact comp_continuous_linear_map L P cont_lin_L cont_lin_P },
-let δ : E → G := λ h, P (ε h) + (∥ L h + ∥h∥•ε h ∥/∥h∥)• η (L h + ∥h∥•ε h),
+let δ : E → G,-- := λ h, P (ε h) + (∥ L h + ∥h∥•ε h ∥/∥h∥)• η (L h + ∥h∥•ε h),
+swap,
 existsi δ,
 { split,
   { intro h,
-    unfold function.comp,
-    rcases cont_lin_P with ⟨lin_P , cont_P⟩,
-    rw TEf h,
-    -- Now I'd like to have a calc proof but I always have weird "unknown identifier" errors in calc
-    have fact1 : g (f a + L h + ∥h∥ • ε h) = g (f a + (L h + ∥h∥ • ε h)) := by {simp, },
-    rw fact1, clear fact1,
-    rw TEg,
-    
-    have fact2 : P (L h + ∥h∥ • ε h) = P (L h) + P (∥h∥ • ε h) := lin_P.add _ _,
-    have fact3 : P (L h + ∥h∥ • ε h) = P (L h) + ∥h∥ • P (ε h) := by simp[fact2, lin_P.smul],
-    clear fact2,
-    rw fact3, clear fact3,
+    by_cases H : h = 0,
+    { -- h = 0 case
+      simp [H],
+      rw [@zero_norm' E _], -- or variations that also don't work
+      
+      admit },
+    { -- h ≠ 0 case
+      rcases cont_lin_P with ⟨lin_P , cont_P⟩,
+       
+      have fact1 := calc 
+      (g ∘ f) (a + h) = g (f (a + h)): by refl
+      ... = g (f a + L h + ∥h∥ • ε h)  : by rw TEf
+      ... = g (f a + (L h + ∥h∥ • ε h)) : by {simp, }
+      ... = g (f a) + P (L h + ∥h∥ • ε h) + ∥ L h + ∥h∥ • ε h∥ • η (L h + ∥h∥ • ε h) : by rw TEg
+      ... = g (f a) + P (L h) + ∥h∥ • P (ε h) + ∥ L h + ∥h∥ • ε h∥ • η (L h + ∥h∥ • ε h) : by { simp[lin_P.add, lin_P.smul] },
+
+  
     repeat {rw add_assoc},
     apply (congr_arg (λ x, g (f a) + (P (L h) + x))),
     dsimp[δ], 
