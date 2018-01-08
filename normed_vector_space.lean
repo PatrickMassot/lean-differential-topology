@@ -2,6 +2,7 @@ import analysis.real
 import analysis.metric_space
 import analysis.limits
 import algebra.module
+import order.filter
 
 noncomputable theory
 
@@ -87,13 +88,25 @@ split,
 end
 end continuous_linear_maps
 
+section little_o
+variables {E : Type*} {F : Type*} {G : Type*} [normed_space E] [normed_space F] [normed_space G]
+variable e: E
+
+def at_pt {X : Type*} [topological_space X] (a : X)  := filter.inf (nhds a) (filter.principal (- {a}))
+#check at_pt e
+variables (U : set E) 
+#check is_open U
+
+end little_o
+
+
 section differential
 variables {E : Type*} {F : Type*} {G : Type*} [normed_space E] [normed_space F] [normed_space G]
 
 def is_differential  (f : E → F) (a : E) (L : E → F) : Prop :=
 (is_continuous_linear_map L) ∧ (∃ ε : E → F, (∀ h, f (a + h) =  f a + L h + ∥h∥ • ε h) ∧  (ε →_{0} 0))
 
--- set_option trace.check true
+ set_option trace.check true
 -- set_option pp.all true
 
 theorem chain_rule (f : E → F) (g : F → G) (a : E) (L : E → F) (P : F → G)
@@ -104,25 +117,33 @@ rcases D' with ⟨cont_lin_P, η, TEg, lim_η⟩,
 unfold is_differential,
 split,
 { exact comp_continuous_linear_map L P cont_lin_L cont_lin_P },
-existsi _,
+let δ : E → G := λ h, P (ε h) + (∥ L h + ∥h∥•ε h ∥/∥h∥)• η (L h + ∥h∥•ε h),
+existsi δ,
 { split,
   { intro h,
     unfold function.comp,
+    rcases cont_lin_P with ⟨lin_P , cont_P⟩,
     rw TEf h,
     -- Now I'd like to have a calc proof but I always have weird "unknown identifier" errors in calc
     have fact1 : g (f a + L h + ∥h∥ • ε h) = g (f a + (L h + ∥h∥ • ε h)) := by {simp, },
     rw fact1, clear fact1,
     rw TEg,
-    rcases cont_lin_P with ⟨lin_P , cont_P⟩, -- moving this line before "rw fact1" makes the later fails WTF?
+    
     have fact2 : P (L h + ∥h∥ • ε h) = P (L h) + P (∥h∥ • ε h) := lin_P.add _ _,
     have fact3 : P (L h + ∥h∥ • ε h) = P (L h) + ∥h∥ • P (ε h) := by simp[fact2, lin_P.smul],
     clear fact2,
-    -- The following line doesn't work. No idea why. Going to bed.
-    rw fact3,
-
+    rw fact3, clear fact3,
+    repeat {rw add_assoc},
+    apply (congr_arg (λ x, g (f a) + (P (L h) + x))),
+    dsimp[δ], 
+    generalize : L h + ∥h∥ • ε h = R,
+    rw smul_add,
+    apply (congr_arg (λ x, ∥h∥ • P (ε h) + x)),
+    rw smul_smul,
+    congr,
+        
     admit },
   { admit }, },
-{ admit },
 end
 
 end differential
