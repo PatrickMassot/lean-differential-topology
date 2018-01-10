@@ -1,14 +1,84 @@
 import normed_vector_space
 
+noncomputable theory
+local attribute [instance] classical.prop_decidable
+
+local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
+local notation `∥` e `∥` := norm e
+
 section differential
+variables {E : Type*} {F : Type*} {G : Type*} [normed_space E] [normed_space F] [normed_space G]
+
 def is_differential  (f : E → F) (a : E) (L : E → F) : Prop :=
 (is_continuous_linear_map L) ∧ (∃ ε : E → F, (∀ h, f (a + h) =  f a + L h + ∥h∥ • ε h) ∧  (ε →_{0} 0))
 
--- set_option trace.check true
--- set_option trace.class_instances true
--- set_option pp.all true
+@[refl]
+lemma real_refl {a:ℝ} : a ≤ a := le_of_eq (by refl)
+
 
 open filter
+
+lemma le_of_patrick_hyp {a b c d : ℝ} : 0 ≤ d → a ≤ b → c > 0→ a/c*d ≤ b/c*d :=
+begin
+intros d_nonneg a_le_b c_pos,
+suffices : a/c ≤ b/c,
+apply mul_le_mul_of_nonneg_right this d_nonneg,
+apply div_le_of_le_mul c_pos _,
+rw [←mul_div_assoc],
+rw[mul_comm],
+rw [mul_div_cancel],
+assumption,
+exact ne_of_gt c_pos,
+end
+
+lemma ineq_prelim (L : E → F) (P : F → G) (ε : E → F) (η : F → G) (MP ML : ℝ) (h : E) 
+(MP_pos : MP > 0)
+(ineq_P : ∀ (x : F), ∥P x∥ ≤ MP * ∥x∥)
+(ML_pos : ML > 0)
+(ineq_L : ∀ (x : E), ∥L x∥ ≤ ML * ∥x∥)
+(H : h ≠ 0) :
+∥ P (ε h) + (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h) ∥  ≤ 
+MP * ∥ε h∥ + (ML + ∥ε h∥) * ∥η (L h + ∥h∥ • ε h)∥  :=
+begin
+  have norm_h_non_zero : ∥h∥ ≠ 0 := norm_non_zero_of_non_zero h H,
+  have norm_h_pos : ∥h∥ > 0 := norm_pos_of_non_zero h H,
+  
+  have prelim : (∥L h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ ≤
+          (ML * ∥h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ := 
+  begin
+    apply le_of_patrick_hyp,
+    { exact non_neg_norm _ },
+    { specialize ineq_L h,
+      apply add_le_add_right ineq_L},
+    { exact norm_h_pos },
+  end,
+
+  have prelim2 : abs (∥L h + ∥h∥ • ε h∥ / ∥h∥) = ∥L h + ∥h∥ • ε h∥ / ∥h∥ := 
+  begin 
+    apply abs_of_nonneg, 
+    apply div_nonneg_of_nonneg_of_pos (non_neg_norm _) norm_h_pos, 
+  end,
+
+  have prelim3 : ∥L h + ∥h∥ • ε h∥/∥h∥*∥η (L h + ∥h∥ • ε h)∥ ≤ (∥L h∥ + ∥∥h∥ • ε h∥)/∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ :=
+  begin
+  apply le_of_patrick_hyp,
+  { apply non_neg_norm },
+  { apply triangle_ineq },
+  { apply norm_h_pos }
+  end,
+
+  exact calc 
+  ∥P (ε h) + (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ ≤ ∥P (ε h)∥  +  ∥ (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ : by { simp[triangle_ineq] }
+  ... ≤ MP*∥ε h∥ + ∥ (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ : by { simp[ineq_P] }
+  ... ≤ MP*∥ε h∥ + (∥L h + ∥h∥ • ε h∥ / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { simp[homogeneity], rw[prelim2] }
+  ... ≤ MP*∥ε h∥ + ((∥L h∥ + ∥ ∥h∥ • ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { simp[triangle_ineq], exact prelim3 }
+  ... ≤ MP*∥ε h∥ + ((∥L h∥ +  ∥h∥ *∥ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { simp[homogeneity, abs_of_nonneg (non_neg_norm h)] }
+  ... ≤ MP*∥ε h∥ + ((ML*∥h∥ +  ∥h∥ *∥ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by {simp[prelim] }
+  ... ≤ MP*∥ε h∥ + (ML +  ∥ε h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { rw add_div, simp[norm_h_non_zero, div_self], apply mul_le_mul_of_nonneg_right _ (non_neg_norm _), rw[mul_div_cancel _ norm_h_non_zero], rw[mul_comm], rw[mul_div_cancel _ norm_h_non_zero] }
+end
+
+
+
 
 theorem chain_rule (f : E → F) (g : F → G) (a : E) (L : E → F) (P : F → G)
 (D : is_differential f a L) (D' : is_differential g (f a) P) : is_differential (g ∘ f) a (P ∘ L) :=
@@ -20,7 +90,7 @@ have cont_linPL := comp_continuous_linear_map L P cont_lin_L cont_lin_P,
 split,
 { exact cont_linPL },
 let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥/∥h∥)• η (L h + ∥h∥•ε h),
-swap,
+
 {existsi δ,
 { split; rcases cont_lin_P with ⟨lin_P , MP, MP_pos, ineq_P⟩; rcases cont_lin_L with ⟨lin_L , ML, ML_pos, ineq_L⟩,
   { intro h,
@@ -55,7 +125,7 @@ swap,
     have bound_δ : ∀ h :E, ∥ δ h ∥ ≤ MP*∥ε h∥ + ( ML + ∥ε h ∥)*∥ η (L h + ∥h∥•ε h)∥,
     { intro h,
       by_cases H : h = 0,
-      { -- h = 0 case
+       { -- h = 0 case
        simp [H, δ],
        simp,
        
@@ -68,18 +138,9 @@ swap,
         simp [δ],
         simp [H],
 
-        have prelim : (∥L h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ ≤
-         (ML * ∥h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ := sorry,
-        exact calc 
-        ∥P (ε h) + (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ ≤ ∥P (ε h)∥  +  ∥ (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ : by { simp[triangle_ineq] }
-        ... ≤ MP*∥ε h∥ + ∥ (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ : by { simp[ineq_P] }
-        ... ≤ MP*∥ε h∥ + (∥L h + ∥h∥ • ε h∥ / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { simp[homogeneity], admit }
-        ... ≤ MP*∥ε h∥ + ((∥L h∥ + ∥ ∥h∥ • ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { simp[triangle_ineq], admit }
-        ... ≤ MP*∥ε h∥ + ((∥L h∥ +  ∥h∥ *∥ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { simp[homogeneity, abs_of_nonneg (non_neg_norm h)],  admit }
-        ... ≤ MP*∥ε h∥ + ((ML*∥h∥ +  ∥h∥ *∥ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by {simp[prelim] }
-        ... ≤ MP*∥ε h∥ + (ML +  ∥ε h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { simp[add_div, mul_div_cancel, H], admit  }
-        ... ≤ MP*∥ε h∥ + (ML + ∥ε h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { admit },
-        } },
+        apply ineq_prelim,
+        repeat {assumption} },
+    }, -- end of bound_δ proof
     
      
     have norm_δ_nonneg : ∀ (t : E), (0:ℝ) ≤ (λ (h : E), ∥δ h∥) t :=

@@ -61,6 +61,9 @@ sorry
 lemma norm_non_zero_of_non_zero {E : Type*} [normed_space E] (e : E) : e ≠ 0 → ∥ e ∥ ≠ 0 :=
 sorry 
 
+lemma norm_pos_of_non_zero {E : Type*} [normed_space E] (e : E) : e ≠ 0 → ∥ e ∥ > 0 :=
+sorry
+
 lemma triangle_ineq {E : Type*} [normed_space E] (a b : E) : ∥ a + b ∥ ≤ ∥ a ∥ + ∥ b ∥ :=
 sorry
 
