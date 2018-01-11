@@ -4,6 +4,7 @@ import analysis.limits
 import analysis.topology.continuity
 import analysis.topology.topological_structures
 import algebra.module
+import algebra.linear_algebra.prod_module
 import order.filter
 
 noncomputable theory
@@ -20,7 +21,7 @@ lemma abs1 : abs (1:ℝ) = 1 :=
 abs_of_pos zero_lt_one
 
 
-variables {V : Type*} [vector_space ℝ V]
+variables {V : Type*} [vector_space ℝ V] {W : Type*} [vector_space ℝ W]
 
 structure vector_space_norm (V : Type*) [vector_space ℝ V] :=
   (map : V → ℝ)
@@ -35,6 +36,80 @@ instance : has_coe_to_fun (vector_space_norm V) :=
 @[simp]
 lemma zero_norm (N : vector_space_norm V) : N 0 = 0 :=
 by simpa using N.homo 0 0
+
+lemma homo_norm {N : vector_space_norm V} (l : ℝ) (a : V): N (l•a) = (abs l)*(N a) :=
+N.homo l a
+
+variables {α : Type*} [decidable_linear_order α]
+lemma max_ge_of_left_ge {a b : α} ( c: α ) : a ≤ b → a ≤ max b c :=
+assume H,  le_trans H (le_max_left b c)
+
+lemma max_ge_of_right_ge {a c : α} (b :α) : a ≤ c → a ≤ max b c :=
+assume H, le_trans H (le_max_right b c)
+
+lemma max_monotone_fun {α : Type*} [decidable_linear_order α] {β : Type*} [decidable_linear_order β] 
+{f : α → β} (H : monotone f) (a a' : α)  :  max (f a) (f a') =  f(max a a') :=
+begin
+by_cases a ≤ a',
+{ have fa_le_fa' := H h,
+  rw max_comm,
+  rw max_eq_left fa_le_fa',
+  have T :=  max_eq_left h,
+  rw max_comm at T,
+  rw T },
+{ have h' : a' ≤ a := le_of_not_ge h,
+  rw max_eq_left (H h'),
+  rw  max_eq_left h' }
+end
+
+lemma monotone_mul_nonneg (a : ℝ) : 0 ≤ a → monotone (λ x, a*x) :=
+assume a_non_neg b c b_le_c, mul_le_mul_of_nonneg_left b_le_c a_non_neg
+
+def product_norm (NV : vector_space_norm V) (NW : vector_space_norm W) : vector_space_norm (V × W)  :=
+{ map :=  λ x, max (NV x.1) (NW x.2), 
+  nonneg := assume x, max_ge_of_left_ge (NW x.2) (NV.nonneg x.1),
+  eq_zero := begin
+    intros x max_zero,
+
+    have left := le_max_left (NV x.1) (NW x.2),
+    rw max_zero at left,
+    have x1_zero := NV.eq_zero x.1 (le_antisymm left (NV.nonneg x.1)),
+    
+    have right := le_max_right (NV x.1) (NW x.2),
+    rw max_zero at right,
+    have x2_zero := NW.eq_zero x.snd (le_antisymm right (NW.nonneg x.2)),
+    
+    cases x,
+    simp at *,
+    rw[x1_zero, x2_zero],
+    refl
+  end,
+  triangle := begin
+    intros x y,
+    have ineq1 : NV ((x + y).fst) ≤ max (NV (x.fst)) (NW (x.snd)) + max (NV (y.fst)) (NW (y.snd)) := 
+    begin
+      simp,
+      have A :=  le_max_left (NV x.1) (NW x.2),
+      have B :=  le_max_left (NV y.1) (NW y.2),
+      exact le_trans (NV.triangle x.1 y.1) (add_le_add A B),
+    end,
+    have ineq2 : NW ((x + y).snd) ≤ max (NV (x.fst)) (NW (x.snd)) + max (NV (y.fst)) (NW (y.snd)) := 
+    begin
+      simp,
+      have A :=  le_max_right (NV x.1) (NW x.2),
+      have B :=  le_max_right (NV y.1) (NW y.2),
+      exact le_trans (NW.triangle x.2 y.2) (add_le_add A B),
+    end,
+    exact max_le ineq1 ineq2
+  end,
+  homo := begin
+    intros l x,
+    dsimp[(•)],
+    rw [homo_norm l x.fst],
+    rw [homo_norm l x.snd],
+    apply max_monotone_fun _,
+    exact monotone_mul_nonneg (abs l) (abs_nonneg l),
+  end }
 
 
 def metric_of_norm {V : Type*} [vector_space ℝ V] (N : vector_space_norm V) : metric_space V :=
@@ -92,7 +167,10 @@ lemma tendsto_smul {f : E → ℝ} { g : E → F} {e : E} {s : ℝ} {b : F} :
 (f →_{e} s) → (g →_{e} b) → ((λ e, (f e) • (g e)) →_{e} s • b) := 
 sorry
 
-instance product_normed_space : normed_space (E × F) := sorry
+instance product_normed_space [nvsE : normed_space E] [nvsF : normed_space F] : normed_space (E × F) := 
+{ norm := product_norm nvsE.norm nvsF.norm, 
+..prod.vector_space}
+
 
 --set_option pp.all true
 instance normed_top_monoid  : topological_add_monoid E  := 
@@ -100,6 +178,7 @@ instance normed_top_monoid  : topological_add_monoid E  :=
 apply continuous_iff_tendsto.2 _,
 intro x,
 have := (tendsto_iff_norm_tends_to_zero (λ (p : E × E), p.fst + p.snd) x (x.1 + x.2)).2,
+--apply this,
 admit
 end }
 
