@@ -77,9 +77,6 @@ section normed_space_topology
 instance normed_space.to_metric_space {A : Type*} [An : normed_space A] : metric_space A :=
 metric_of_norm An.norm
 
-instance normed_top_monoid  : topological_add_monoid E  := 
-sorry
-
 
 lemma tendsto_iff_norm_tends_to_zero (f : E → F) (a : E) (b : F) : (f →_{a} b) ↔ ((λ e, ∥ f e - b ∥) →_{a} 0) :=
 sorry
@@ -94,6 +91,17 @@ sorry
 lemma tendsto_smul {f : E → ℝ} { g : E → F} {e : E} {s : ℝ} {b : F} :
 (f →_{e} s) → (g →_{e} b) → ((λ e, (f e) • (g e)) →_{e} s • b) := 
 sorry
+
+instance product_normed_space : normed_space (E × F) := sorry
+
+--set_option pp.all true
+instance normed_top_monoid  : topological_add_monoid E  := 
+{ continuous_add := begin 
+apply continuous_iff_tendsto.2 _,
+intro x,
+have := (tendsto_iff_norm_tends_to_zero (λ (p : E × E), p.fst + p.snd) x (x.1 + x.2)).2,
+admit
+end }
 
 end normed_space_topology
 
