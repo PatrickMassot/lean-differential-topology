@@ -13,7 +13,7 @@ def is_differential  (f : E → F) (a : E) (L : E → F) : Prop :=
 (is_continuous_linear_map L) ∧ (∃ ε : E → F, (∀ h, f (a + h) =  f a + L h + ∥h∥ • ε h) ∧  (ε →_{0} 0))
 
 @[refl]
-lemma real_refl {a:ℝ} : a ≤ a := le_of_eq (by refl)
+lemma real_refl {a:ℝ} : a ≤ a := le_refl _
 
 
 open filter

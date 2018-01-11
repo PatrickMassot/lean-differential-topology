@@ -47,35 +47,39 @@ def metric_of_norm {V : Type*} [vector_space ℝ V] (N : vector_space_norm V) : 
 class normed_space (type : Type*) extends vector_space ℝ type :=
 (norm : vector_space_norm type)
 
-def norm {E : Type*} [normed_space E] : E → ℝ := normed_space.norm E
+variables {E : Type*} {F : Type*} {G : Type*} [normed_space E] [normed_space F] [normed_space G]
+
+def norm : E → ℝ := normed_space.norm E
 local notation `∥` e `∥` := norm e
 
-
-
 @[simp]
-lemma zero_norm' {E : Type*} [normed_space E] : ∥(0:E)∥ = 0 :=
-sorry
-lemma non_neg_norm {E : Type*} [normed_space E] : ∀ e : E, 0 ≤ ∥e∥ :=
-sorry
+lemma zero_norm' : ∥(0:E)∥ = 0 :=
+zero_norm _
 
-lemma norm_non_zero_of_non_zero {E : Type*} [normed_space E] (e : E) : e ≠ 0 → ∥ e ∥ ≠ 0 :=
-sorry 
+lemma non_neg_norm : ∀ e : E, 0 ≤ ∥e∥ :=
+vector_space_norm.nonneg _
 
-lemma norm_pos_of_non_zero {E : Type*} [normed_space E] (e : E) : e ≠ 0 → ∥ e ∥ > 0 :=
-sorry
+lemma norm_non_zero_of_non_zero (e : E) : e ≠ 0 → ∥ e ∥ ≠ 0 :=
+not_imp_not.2 (vector_space_norm.eq_zero _ _)
 
-lemma triangle_ineq {E : Type*} [normed_space E] (a b : E) : ∥ a + b ∥ ≤ ∥ a ∥ + ∥ b ∥ :=
-sorry
+lemma norm_pos_of_non_zero (e : E) : e ≠ 0 → ∥ e ∥ > 0 :=
+assume e_non_zero, lt_of_le_of_ne (non_neg_norm _) (ne.symm (norm_non_zero_of_non_zero e e_non_zero))
 
-lemma homogeneity {E : Type*} [normed_space E] (a : E) (s : ℝ): ∥ s • a ∥ = (abs s)* ∥ a ∥ :=
-sorry
+lemma triangle_ineq (a b : E) : ∥ a + b ∥ ≤ ∥ a ∥ + ∥ b ∥ :=
+vector_space_norm.triangle _ _ _
+
+lemma homogeneity (a : E) (s : ℝ): ∥ s • a ∥ = (abs s)* ∥ a ∥ :=
+vector_space_norm.homo _ _ _
+
+
+section normed_space_topology
 
 instance normed_space.to_metric_space {A : Type*} [An : normed_space A] : metric_space A :=
 metric_of_norm An.norm
 
-instance normed_top_monoid  {E : Type*} [normed_space E] : topological_add_monoid E  := sorry
+instance normed_top_monoid  : topological_add_monoid E  := 
+sorry
 
-variables {E : Type*} {F : Type*} {G : Type*} [normed_space E] [normed_space F] [normed_space G]
 
 lemma tendsto_iff_norm_tends_to_zero (f : E → F) (a : E) (b : F) : (f →_{a} b) ↔ ((λ e, ∥ f e - b ∥) →_{a} 0) :=
 sorry
@@ -87,9 +91,11 @@ sorry
 lemma lim_norm (E : Type*) [normed_space E] : ((λ e, ∥e∥) : E → ℝ) →_{0} 0 :=
 sorry
 
-lemma tendsto_smul {E : Type*} [normed_space E] {f : E → ℝ} { g : E → F} {e : E} {s : ℝ} {b : F} :
+lemma tendsto_smul {f : E → ℝ} { g : E → F} {e : E} {s : ℝ} {b : F} :
 (f →_{e} s) → (g →_{e} b) → ((λ e, (f e) • (g e)) →_{e} s • b) := 
 sorry
+
+end normed_space_topology
 
 section continuous_linear_maps
 
