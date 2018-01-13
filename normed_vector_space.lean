@@ -10,10 +10,6 @@ import order.filter
 noncomputable theory
 local attribute [instance] classical.prop_decidable
 
--- This will soon be bultin mathlib
-attribute [simp] abs_zero abs_neg
-
-
 --local notation f `→_{` a `}` b := filter.tendsto f (nhds a) (nhds b)
 local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
 
@@ -152,9 +148,26 @@ section normed_space_topology
 instance normed_space.to_metric_space {A : Type*} [An : normed_space A] : metric_space A :=
 metric_of_norm An.norm
 
+lemma tendsto_iff_distance_tendsto_zero { X Y : Type*} [topological_space X] [metric_space Y]
+(f : X → Y) (x : X) (y : Y): (f →_{x} y) ↔ ((λ x', dist (f x') y) →_{x} 0) :=
+begin
+split,
+{ intro lim,
+  have lim_y: (λ x', y) →_{x} y := continuous_iff_tendsto.1 (@continuous_const X Y _ _ y) x,
+  have lim : (λ x', (f x', y)) →_{x} (y, y) := sorry,
+  have lim2 := continuous_iff_tendsto.1 (@continuous_dist' Y _) (y, y),
+  simp at lim2,
+  exact filter.tendsto_compose lim lim2,  
+ },
+{ admit }
+end
 
 lemma tendsto_iff_norm_tends_to_zero (f : E → F) (a : E) (b : F) : (f →_{a} b) ↔ ((λ e, ∥ f e - b ∥) →_{a} 0) :=
-sorry
+begin
+split,
+{ admit },
+{ admit }
+end
 
 lemma squeeze_zero {T : Type*} [topological_space T] (f g : T → ℝ) (t₀ : T) : 
 (∀ t : T, 0 ≤ f t) → (∀ t : T, f t ≤ g t) → (g →_{t₀} 0) → (f →_{t₀} 0) :=
