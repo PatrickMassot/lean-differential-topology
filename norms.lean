@@ -6,79 +6,58 @@ class normed_group (α : Type*) extends add_comm_group α, metric_space α :=
 (norm : α → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
 
-section normed_group
+
 def norm {G : Type*} [normed_group G] : G → ℝ := normed_group.norm 
-local notation `∥` e `∥` := norm e
+notation `∥` e `∥` := norm e
 
-variables {G : Type*} [nG : normed_group G]
--- Following seems necessary, Lean is not smart enough here?
-include nG
+section normed_group
+variable {G : Type*}
 
--- The following tries to replace two steps that arise in all proofs. But it doesn't work
--- I'd be happy to learn how to do that (although in this case it's not a big benefit)
--- One could almost imagine a mechanism like the one translating multiplicative lemmas to additive ones
-meta def translate_to_dist : tactic unit := do
-`[unfold norm], 
-`[rw[←nG.dist_eq]]
+@[simp]
+lemma norm_dist' [nG: normed_group G] { g h : G} : dist g h = ∥g - h∥ :=
+by { have := nG.dist_eq, exact this g h }
 
+variable [normed_group G]
 
--- In the next proof, I'm not sure why all those unfold are necessary
--- Also not sure naming nG is necessary (same question in other proofs)
--- About which arguments are implicit, I followed metric_space.lean, without really understanding
+@[simp]
+lemma norm_dist { g : G} : dist g 0 = ∥g∥ :=
+by { rw[norm_dist'], simp }
+
 lemma norm_triangle (g h : G) : ∥g + h∥ ≤ ∥g∥ + ∥h∥ :=
 calc 
 ∥g + h∥ = ∥g - (-h)∥             : by simp
-   ... = dist g (-h)            : by { unfold norm, rw [←nG.dist_eq], refl }
-   ... ≤ dist g 0 + dist 0 (-h) : by apply nG.dist_triangle
-   ... = ∥g∥ + ∥h∥               : by { unfold dist, repeat {rw[nG.dist_eq]}, simp, refl }
+   ... = dist g (-h)            : by simp
+   ... ≤ dist g 0 + dist 0 (-h) : by apply dist_triangle
+   ... = ∥g∥ + ∥h∥               : by simp
 
 lemma norm_nonneg {g : G} : 0 ≤ ∥g∥ :=
-begin
-  rw[show ∥g∥ = ∥g-0∥, by simp],
-  unfold norm, rw[←nG.dist_eq],
-  exact dist_nonneg
-end
+by { rw[←norm_dist], exact dist_nonneg }
 
--- Not sure whether it would be more convenient to have one lemma per implication
 lemma norm_zero_iff_zero {g : G} : ∥g∥ = 0 ↔ g = 0 :=
-begin
-  rw[show ∥g∥ = ∥g-0∥, by simp],
-  unfold norm, rw[←nG.dist_eq],
-  exact dist_eq_zero_iff
-end
+by { rw[←norm_dist], exact dist_eq_zero_iff }
 
-lemma norm_pos_of_ne {g : G} (h : g ≠ 0) : ∥ g ∥  > 0 :=
+@[simp]
+lemma zero_norm_zero : ∥(0:G)∥ = 0 :=
+norm_zero_iff_zero.2 (by simp)
+
+lemma norm_pos_iff {g : G} : ∥ g ∥  > 0 ↔ g ≠ 0 :=
 begin
-  rw[show ∥g∥ = ∥g-0∥, by simp],
-  unfold norm, rw[←nG.dist_eq],
-  exact dist_pos_of_ne h
+split ; intro h ; rw[←norm_dist] at *,
+{ exact ne_of_dist_pos h },
+{ exact dist_pos_of_ne h }
 end
 
 lemma norm_le_zero_iff {g : G} : ∥g∥ ≤ 0 ↔ g = 0 :=
-begin
-  rw[show ∥g∥ = ∥g-0∥, by simp],
-  unfold norm, rw[←nG.dist_eq],
-  exact dist_le_zero_iff
-end
+by { rw[←norm_dist], exact dist_le_zero_iff }
 
 
-lemma ne_of_norm_pos {g : G} (h : ∥g∥ > 0) : g ≠ 0 :=
-begin
-  rw[show ∥g∥ = ∥g-0∥, by simp] at h,
-  unfold norm at h, rw[←nG.dist_eq] at h,
-  exact ne_of_dist_pos h
-end
-
-lemma eq_norm_of_neg {g : G} : ∥g∥ = ∥-g∥ :=
+@[simp]
+lemma norm_neg {g : G} : ∥-g∥ = ∥g∥ :=
 begin
   rw[show ∥g∥ = ∥g-0∥, by simp],
   rw[show ∥-g∥ = ∥0-g∥, by simp],
-  unfold norm, repeat {rw[←nG.dist_eq]},
-  -- I would like to write the following but can't
-  -- exact nG.dist_comm g 0
-  have := nG.dist_comm,
-  specialize this g 0,
-  exact this
+  repeat {rw[←norm_dist']},
+  exact dist_comm 0 g
 end
 
 end normed_group
