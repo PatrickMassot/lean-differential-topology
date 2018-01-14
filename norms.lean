@@ -1,6 +1,8 @@
 import algebra.group
+import algebra.linear_algebra.prod_module
 import analysis.metric_space
 
+noncomputable theory
 
 class normed_group (α : Type*) extends add_comm_group α, metric_space α :=
 (norm : α → ℝ)
@@ -57,6 +59,20 @@ begin
   repeat {rw[←norm_dist']},
   exact dist_comm 0 g
 end
+
+instance prod.normed_group {F : Type*} [normed_group F] : normed_group (G × F) :=
+{norm := λ x, max ∥x.1∥ ∥x.2∥,
+dist_eq := begin
+  intros x y, 
+  have h₁: ∥(x - y).fst∥ = ∥x.fst - y.fst∥, by simp,
+  rw[←norm_dist'] at h₁,
+  have h₂: ∥(x - y).snd∥ = ∥x.snd - y.snd∥, by simp,
+  rw[←norm_dist'] at h₂,
+  rw[h₁, h₂],
+  refl
+end,
+to_metric_space := prod.metric_space_max,
+to_add_comm_group := prod.add_comm_group }
 
 end normed_group
 
