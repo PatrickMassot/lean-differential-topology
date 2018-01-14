@@ -11,13 +11,11 @@ def norm {G : Type*} [normed_group G] : G → ℝ := normed_group.norm
 notation `∥` e `∥` := norm e
 
 section normed_group
-variable {G : Type*}
+variables {G : Type*} [normed_group G]
 
-@[simp]
-lemma norm_dist' [nG: normed_group G] { g h : G} : dist g h = ∥g - h∥ :=
-by { have := nG.dist_eq, exact this g h }
 
-variable [normed_group G]
+lemma norm_dist' { g h : G} : dist g h = ∥g - h∥ :=
+normed_group.dist_eq _ _
 
 @[simp]
 lemma norm_dist { g : G} : dist g 0 = ∥g∥ :=
@@ -26,9 +24,9 @@ by { rw[norm_dist'], simp }
 lemma norm_triangle (g h : G) : ∥g + h∥ ≤ ∥g∥ + ∥h∥ :=
 calc 
 ∥g + h∥ = ∥g - (-h)∥             : by simp
-   ... = dist g (-h)            : by simp
+   ... = dist g (-h)            : by simp[norm_dist']
    ... ≤ dist g 0 + dist 0 (-h) : by apply dist_triangle
-   ... = ∥g∥ + ∥h∥               : by simp
+   ... = ∥g∥ + ∥h∥               : by simp[norm_dist']
 
 lemma norm_nonneg {g : G} : 0 ≤ ∥g∥ :=
 by { rw[←norm_dist], exact dist_nonneg }
