@@ -53,12 +53,14 @@ instance prod.ring [ring α] [ring β] : ring (α × β) :=
     ... = (x.1*z.1 + y.1*z.1, x.2*z.2 + y.2*z.2) : by simp[right_distrib],
   ..prod.monoid,
   ..prod.add_comm_group}
-/-
+
 instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α × β) :=
 { norm_mul :=sorry,
 to_ring:=prod.ring,
+to_uniform_space := prod.normed_group.to_uniform_space, 
 ..prod.normed_group}
 
+/-
 class normed_field (α : Type*) extends discrete_field α, metric_space α :=
 (norm : α → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
