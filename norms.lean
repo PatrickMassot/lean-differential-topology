@@ -148,7 +148,6 @@ instance normed_field.to_normed_ring [H : normed_field α] : normed_ring α :=
   norm_mul := by finish[H.norm_mul],
  ..H }
 
-
 class normed_space (α β : Type*) [normed_field α] extends vector_space α β, metric_space β :=
 (norm : β → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
@@ -157,8 +156,46 @@ class normed_space (α β : Type*) [normed_field α] extends vector_space α β,
 instance normed_space.to_normed_group [normed_field α] [H : normed_space α β] : normed_group β :=
 { to_uniform_space := H.to_uniform_space, ..H }
 
+lemma norm_smul {α : Type*} { β : Type*} [normed_field α] [normed_space α β] (s : α) (x : β) : ∥s • x∥ = ∥s∥ * ∥x∥ :=
+normed_space.norm_smul _ _
+
+lemma max_monotone_fun {α : Type*} [decidable_linear_order α] {β : Type*} [decidable_linear_order β] 
+{f : α → β} (H : monotone f) (a a' : α)  :  max (f a) (f a') =  f(max a a') :=
+begin
+by_cases a ≤ a',
+{ have fa_le_fa' := H h,
+  rw max_comm,
+  rw max_eq_left fa_le_fa',
+  have T :=  max_eq_left h,
+  rw max_comm at T,
+  rw T },
+{ have h' : a' ≤ a := le_of_not_ge h,
+  rw max_eq_left (H h'),
+  rw  max_eq_left h' }
+end
+
+lemma monotone_mul_nonneg (a : ℝ) : 0 ≤ a → monotone (λ x, a*x) :=
+assume a_non_neg b c b_le_c, mul_le_mul_of_nonneg_left b_le_c a_non_neg
+
+lemma max_mul_nonneg (a b c : ℝ) : 0 ≤ a → max (a*b) (a*c) = a*(max b c) :=
+assume a_nonneg, max_monotone_fun (monotone_mul_nonneg a a_nonneg) b c
+
 variables {k : Type*} [normed_field k] {E : Type*} {F : Type*} [normed_space k E] [normed_space k F]
+
 instance product_normed_space : normed_space k (E × F) := 
-{ norm_smul := sorry,
+{ norm_smul := 
+  begin 
+    intros s x,
+    cases x with x₁ x₂,
+    exact calc 
+      ∥s • (x₁, x₂)∥ = ∥ (s • x₁, s• x₂)∥ : rfl
+      ... = max (∥s • x₁∥) (∥ s• x₂∥) : rfl
+      ... = max (∥s∥ * ∥x₁∥) (∥s∥ * ∥x₂∥) : by simp[norm_smul s x₁, norm_smul s x₂]
+      ... = ∥s∥ * max (∥x₁∥) (∥x₂∥) : by simp[max_mul_nonneg, norm_nonneg]
+  end,
+  -- I have no idea why the following two lines are necessary
+  add_smul := by simp[add_smul],
+  smul_add := by simp[smul_add],
+  to_uniform_space := prod.normed_group.to_uniform_space,
   ..prod.normed_group, 
   ..prod.vector_space }
