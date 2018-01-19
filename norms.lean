@@ -156,3 +156,9 @@ class normed_space (α β : Type*) [normed_field α] extends vector_space α β,
 
 instance normed_space.to_normed_group [normed_field α] [H : normed_space α β] : normed_group β :=
 { to_uniform_space := H.to_uniform_space, ..H }
+
+variables {k : Type*} [normed_field k] {E : Type*} {F : Type*} [normed_space k E] [normed_space k F]
+instance product_normed_space : normed_space k (E × F) := 
+{ norm_smul := sorry,
+  ..prod.normed_group, 
+  ..prod.vector_space }
