@@ -91,7 +91,7 @@ lemma norm_mul {α : Type*} [normed_ring α] (a b : α) : (∥a*b∥) ≤ (∥a�
 normed_ring.norm_mul _ _
 
 
-instance prod.ring [ring α] [ring β] : ring (α × β) :=
+def prod.ring [ring α] [ring β] : ring (α × β) :=
 { left_distrib := assume x y z, calc
     x*(y+z) = (x.1, x.2) * (y.1 + z.1, y.2 + z.2) : rfl
     ... = (x.1*(y.1 + z.1), x.2*(y.2 + z.2)) : rfl
@@ -105,7 +105,7 @@ instance prod.ring [ring α] [ring β] : ring (α × β) :=
 
 -- a tribute to  abs_abs_sub_abs_le_abs_sub from core algebra.functions
 lemma max_prod_prod_le_max_prod_max {α : Type*} [decidable_linear_ordered_comm_ring α] {a b c d  : α} 
-{ha : 0 ≤ a } {hb : 0 ≤ b} {hd: 0 ≤ d} : max (a*b) (c*d) ≤ (max a c) * (max b d) :=
+(ha : 0 ≤ a) (hb : 0 ≤ b) (hd: 0 ≤ d) : max (a*b) (c*d) ≤ (max a c) * (max b d) :=
 begin
   have hac : 0 ≤ max a c := le_trans ha (le_max_left a c),
   have A := le_max_left a c,
@@ -123,14 +123,13 @@ lemma max_le_max {α : Type*} [decidable_linear_ordered_comm_ring α] {a b c d  
 (h1 : a ≤ b) (h2 : c ≤ d) : max a c ≤ max b d := 
 max_le (le_trans h1 (le_max_left b d)) (le_trans h2 (le_max_right b d))
 
-
-instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α × β) :=
+def prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α × β) :=
 { norm_mul := assume x y, 
   calc
     ∥x * y∥ = ∥(x.1*y.1, x.2*y.2)∥ : rfl 
         ... = (max ∥x.1*y.1∥  ∥x.2*y.2∥) : rfl
         ... ≤ (max (∥x.1∥*∥y.1∥) (∥x.2∥*∥y.2∥)) : max_le_max (norm_mul (x.1) (y.1)) (norm_mul (x.2) (y.2))                                                   
-        ... ≤ (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by { refine max_prod_prod_le_max_prod_max ; exact norm_nonneg }
+        ... ≤ (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by { apply max_prod_prod_le_max_prod_max _ _ _; exact norm_nonneg }
         ... = (∥x∥*∥y∥) : rfl,
   dist_eq := normed_group.dist_eq,
   to_ring:=prod.ring,
@@ -138,14 +137,17 @@ instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α ×
 ..prod.normed_group,
 }
 
-/-
+
 class normed_field (α : Type*) extends discrete_field α, metric_space α :=
 (norm : α → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
 (norm_mul : ∀ a b, norm (a * b) = norm a * norm b)
 
 instance normed_field.to_normed_ring [H : normed_field α] : normed_ring α :=
-{ to_uniform_space := H.to_uniform_space, ..H }
+{ to_uniform_space := H.to_uniform_space,
+  norm_mul := by finish[H.norm_mul],
+ ..H }
+
 
 class normed_space (α β : Type*) [normed_field α] extends vector_space α β, metric_space β :=
 (norm : β → ℝ)
@@ -154,4 +156,3 @@ class normed_space (α β : Type*) [normed_field α] extends vector_space α β,
 
 instance normed_space.to_normed_group [normed_field α] [H : normed_space α β] : normed_group β :=
 { to_uniform_space := H.to_uniform_space, ..H }
--/
