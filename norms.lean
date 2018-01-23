@@ -1,9 +1,13 @@
 import algebra.group
 import algebra.linear_algebra.prod_module
 import analysis.metric_space
+import analysis.topology.continuity
 import data.prod
+import tactic.norm_num
 
 noncomputable theory
+
+local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
 
 class normed_group (α : Type*) extends add_comm_group α, metric_space α :=
 (norm : α → ℝ)
@@ -14,7 +18,7 @@ def norm {G : Type*} [normed_group G] : G → ℝ := normed_group.norm
 notation `∥` e `∥` := norm e
 
 section normed_group
-variables {G : Type*} [normed_group G]
+variables {G : Type*} [normed_group G] {H : Type*} [normed_group H]
 
 
 lemma norm_dist' { g h : G} : dist g h = ∥g - h∥ :=
@@ -74,6 +78,113 @@ dist_eq := begin
 end,
 to_metric_space := prod.metric_space_max,
 to_add_comm_group := prod.add_comm_group }
+
+lemma norm_proj1_le (x : G × H) : ∥x.1∥ ≤ ∥x∥ :=
+begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[le_max_left], end
+
+lemma norm_proj2_le (x : G × H) : ∥x.2∥ ≤ ∥x∥ :=
+begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[le_max_right], end
+
+lemma tendsto_iff_distance_tendsto_zero { X Y : Type*} [topological_space X] [metric_space Y]
+{f : X → Y} {x : X} {y : Y}: (f →_{x} y) ↔ ((λ x', dist (f x') y) →_{x} 0) :=
+begin
+split,
+{ intro lim,
+  have := tendsto_dist lim tendsto_const_nhds, swap, exact y,
+  finish[this] },
+{ intro lim_dist,
+  --unfold filter.tendsto at *,
+  --rw nhds_eq_metric,
+  admit }
+end
+
+lemma tendsto_iff_norm_tendsto_zero (f : G → H) (a : G) (b : H) : (f →_{a} b) ↔ ((λ e, ∥ f e - b ∥) →_{a} 0) :=
+begin
+simp only [norm_dist'.symm],
+exact tendsto_iff_distance_tendsto_zero
+end
+
+#check filter.upwards_sets
+lemma squeeze_zero {T : Type*} [topological_space T] (f g : T → ℝ) (t₀ : T) : 
+(∀ t : T, 0 ≤ f t) → (∀ t : T, f t ≤ g t) → (g →_{t₀} 0) → (f →_{t₀} 0) :=
+begin
+  intros f_nonneg f_le_g lim_g,
+  apply tendsto_orderable_unbounded _ _ _; try { apply_instance },
+  existsi (1:ℝ), norm_num,
+  existsi -(1:ℝ), norm_num,
+  intros l u l_neg u_pos,
+
+  let ε := min (-l) u,
+  have ε_pos : 0 < ε := lt_min (neg_pos.2 l_neg) u_pos,
+  have nhd_0 : { t | t < ε} ∈ (nhds (0:ℝ)).sets := gt_mem_nhds ε_pos,
+  
+  have H : {x | g x < ε} ∈ (nhds t₀).sets,
+  { -- Here I want to use lim_g, don't know how
+    have H1:= lim_g nhd_0,
+    sorry },
+
+  have H' : ∀ x : T, g x < ε → f x < ε :=
+    assume x i, lt_of_le_of_lt (f_le_g x) i,
+  
+  -- Should now use filter.upwards_sets somehow
+  -- Note that actually we can simplify the situation as follows:
+
+  have h : {b | l < f b ∧ f b < u } = {b | f b < u}, 
+  begin
+    have h0 : ∀ b, ((l <f b) ∧ (f b < u)) ↔ f b < u :=
+    begin
+      intro b,
+      split,
+      { intro hf,
+        cases hf with hl hu,
+        exact hu },
+      { intro h,
+        simp[h, (lt_of_lt_of_le l_neg (f_nonneg b))] }
+    end,
+  simp[h0],
+  end,
+  rw h, clear h,
+  
+  sorry
+end
+
+
+lemma lim_norm (x: G) : ((λ g, ∥g-x∥) : G → ℝ) →_{x} 0 :=
+begin
+apply (tendsto_iff_norm_tendsto_zero _ _ _).1, 
+apply continuous_iff_tendsto.1,
+simp[show (λ e : G , e) = id, from rfl, continuous_id]
+end
+
+lemma lim_norm_zero  : ((λ g, ∥g∥) : G → ℝ) →_{0} 0 :=
+by simpa using lim_norm (0:G)
+
+instance normed_top_monoid  : topological_add_monoid G  := 
+{ continuous_add := begin 
+apply continuous_iff_tendsto.2 _,
+intro x,
+have := (tendsto_iff_norm_tendsto_zero (λ (p : G × G), p.fst + p.snd) x (x.1 + x.2)).2,
+apply this, clear this,
+simp,
+have ineq := λ e: G × G, calc
+ ∥e.fst + (e.snd + (-x.fst + -x.snd))∥ = ∥(e.fst-x.fst) + (e.snd - x.snd)∥ : by simp
+ ... ≤ ∥e.fst - x.fst∥ + ∥ e.snd - x.snd ∥  : norm_triangle (e.fst-x.fst) (e.snd - x.snd),
+
+apply squeeze_zero _ _ x (by simp[norm_nonneg]) ineq,
+have ineq1 : ∀ e : G × G, ∥ e.fst - x.fst∥ ≤ ∥e - x∥ := assume e, norm_proj1_le (e-x),
+have lim1 : (λ e : G × G, ∥ e.fst - x.fst∥) →_{x} 0 := squeeze_zero _ _ x (by simp[norm_nonneg]) ineq1 _, 
+clear ineq1,
+
+have ineq2 : ∀ e : G × G, ∥ e.snd - x.snd∥ ≤ ∥e - x∥ := assume e, norm_proj2_le (e-x),
+have lim2 : (λ e : G × G, ∥ e.snd - x.snd∥) →_{x} 0 := squeeze_zero _ _ x (by simp[norm_nonneg]) ineq2 _, 
+clear ineq2, 
+
+have := tendsto_add lim1 lim2,
+simpa using this,
+
+exact lim_norm x,
+exact lim_norm x,
+end }
 
 end normed_group
 
