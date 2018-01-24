@@ -39,7 +39,7 @@ lemma norm_nonneg {g : G} : 0 ≤ ∥g∥ :=
 by { rw[←norm_dist], exact dist_nonneg }
 
 lemma norm_zero_iff_zero {g : G} : ∥g∥ = 0 ↔ g = 0 :=
-by { rw[←norm_dist], exact dist_eq_zero_iff }
+by { rw[←norm_dist], exact dist_eq_zero }
 
 @[simp]
 lemma zero_norm_zero : ∥(0:G)∥ = 0 :=
@@ -48,12 +48,12 @@ norm_zero_iff_zero.2 (by simp)
 lemma norm_pos_iff {g : G} : ∥ g ∥  > 0 ↔ g ≠ 0 :=
 begin
 split ; intro h ; rw[←norm_dist] at *,
-{ exact ne_of_dist_pos h },
-{ exact dist_pos_of_ne h }
+{ exact dist_pos.1 h },
+{ exact dist_pos.2 h }
 end
 
 lemma norm_le_zero_iff {g : G} : ∥g∥ ≤ 0 ↔ g = 0 :=
-by { rw[←norm_dist], exact dist_le_zero_iff }
+by { rw[←norm_dist], exact dist_le_zero }
 
 
 @[simp]
@@ -84,8 +84,8 @@ begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[
 
 lemma norm_proj2_le (x : G × H) : ∥x.2∥ ≤ ∥x∥ :=
 begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[le_max_right], end
-
-lemma tendsto_iff_distance_tendsto_zero { X Y : Type*} [topological_space X] [metric_space Y]
+-- X should be a topological space but need to wait for mathlib issue #35
+lemma tendsto_iff_distance_tendsto_zero { X Y : Type*} [metric_space X] [metric_space Y]
 {f : X → Y} {x : X} {y : Y}: (f →_{x} y) ↔ ((λ x', dist (f x') y) →_{x} 0) :=
 begin
 split,
@@ -158,6 +158,8 @@ end
 
 lemma lim_norm_zero  : ((λ g, ∥g∥) : G → ℝ) →_{0} 0 :=
 by simpa using lim_norm (0:G)
+
+set_option trace.class_instances true
 
 instance normed_top_monoid  : topological_add_monoid G  := 
 { continuous_add := begin 
