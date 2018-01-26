@@ -50,3 +50,7 @@ begin
         ... ≤ max (abs (f x - y)) (abs (h x - y)) : by { apply abs_le_max_abs_abs; assumption }
         ... < ε :  by { apply max_lt ; assumption }
 end
+
+lemma squeeze_zero {T : Type*} [metric_space T] (f g : T → ℝ) (t₀ : T) : 
+(∀ t : T, 0 ≤ f t) → (∀ t : T, f t ≤ g t) → (g →_{t₀} 0) → (f →_{t₀} 0) :=
+assume f_non_neg f_le_g,  squeeze (λ t : T, 0) f g t₀ 0 f_non_neg f_le_g tendsto_const_nhds
