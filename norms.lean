@@ -104,50 +104,6 @@ simp only [norm_dist'.symm],
 exact tendsto_iff_distance_tendsto_zero
 end
 
-#check filter.upwards_sets
-lemma squeeze_zero {T : Type*} [topological_space T] (f g : T → ℝ) (t₀ : T) : 
-(∀ t : T, 0 ≤ f t) → (∀ t : T, f t ≤ g t) → (g →_{t₀} 0) → (f →_{t₀} 0) :=
-begin
-  intros f_nonneg f_le_g lim_g,
-  apply tendsto_orderable_unbounded _ _ _; try { apply_instance },
-  existsi (1:ℝ), norm_num,
-  existsi -(1:ℝ), norm_num,
-  intros l u l_neg u_pos,
-
-  let ε := min (-l) u,
-  have ε_pos : 0 < ε := lt_min (neg_pos.2 l_neg) u_pos,
-  have nhd_0 : { t | t < ε} ∈ (nhds (0:ℝ)).sets := gt_mem_nhds ε_pos,
-  
-  have H : {x | g x < ε} ∈ (nhds t₀).sets,
-  { -- Here I want to use lim_g, don't know how
-    have H1:= lim_g nhd_0,
-    sorry },
-
-  have H' : ∀ x : T, g x < ε → f x < ε :=
-    assume x i, lt_of_le_of_lt (f_le_g x) i,
-  
-  -- Should now use filter.upwards_sets somehow
-  -- Note that actually we can simplify the situation as follows:
-
-  have h : {b | l < f b ∧ f b < u } = {b | f b < u}, 
-  begin
-    have h0 : ∀ b, ((l <f b) ∧ (f b < u)) ↔ f b < u :=
-    begin
-      intro b,
-      split,
-      { intro hf,
-        cases hf with hl hu,
-        exact hu },
-      { intro h,
-        simp[h, (lt_of_lt_of_le l_neg (f_nonneg b))] }
-    end,
-  simp[h0],
-  end,
-  rw h, clear h,
-  
-  sorry
-end
-
 
 lemma lim_norm (x: G) : ((λ g, ∥g-x∥) : G → ℝ) →_{x} 0 :=
 begin
@@ -160,6 +116,7 @@ lemma lim_norm_zero  : ((λ g, ∥g∥) : G → ℝ) →_{0} 0 :=
 by simpa using lim_norm (0:G)
 
 set_option trace.class_instances true
+/- The next instance used to work but go into infinite instance resolution loop with new real numbers.
 
 instance normed_top_monoid  : topological_add_monoid G  := 
 { continuous_add := begin 
@@ -187,7 +144,7 @@ simpa using this,
 exact lim_norm x,
 exact lim_norm x,
 end }
-
+-/
 end normed_group
 
 class normed_ring (α : Type*) extends ring α, metric_space α :=
@@ -236,7 +193,7 @@ lemma max_le_max {α : Type*} [decidable_linear_ordered_comm_ring α] {a b c d  
 (h1 : a ≤ b) (h2 : c ≤ d) : max a c ≤ max b d := 
 max_le (le_trans h1 (le_max_left b d)) (le_trans h2 (le_max_right b d))
 
-def prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α × β) :=
+instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α × β) :=
 { norm_mul := assume x y, 
   calc
     ∥x * y∥ = ∥(x.1*y.1, x.2*y.2)∥ : rfl 
@@ -265,9 +222,12 @@ class normed_space (α β : Type*) [normed_field α] extends vector_space α β,
 (norm : β → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
 (norm_smul : ∀ a b, norm (a • b) = normed_field.norm a * norm b)
+variables  [normed_field α] [module α β]
 
+-- Following instance used to work but not any longer
 instance normed_space.to_normed_group [normed_field α] [H : normed_space α β] : normed_group β :=
-{ to_uniform_space := H.to_uniform_space, ..H }
+{ to_uniform_space := H.to_uniform_space, 
+  ..H }
 
 lemma norm_smul {α : Type*} { β : Type*} [normed_field α] [normed_space α β] (s : α) (x : β) : ∥s • x∥ = ∥s∥ * ∥x∥ :=
 normed_space.norm_smul _ _
@@ -306,7 +266,8 @@ instance product_normed_space : normed_space k (E × F) :=
       ... = max (∥s∥ * ∥x₁∥) (∥s∥ * ∥x₂∥) : by simp[norm_smul s x₁, norm_smul s x₂]
       ... = ∥s∥ * max (∥x₁∥) (∥x₂∥) : by simp[max_mul_nonneg, norm_nonneg]
   end,
-  -- I have no idea why the following two lines are necessary
+  -- Following two lines previsouly worked without me understand why they were needed.
+  -- Now they fail
   add_smul := by simp[add_smul],
   smul_add := by simp[smul_add],
   to_uniform_space := prod.normed_group.to_uniform_space,
