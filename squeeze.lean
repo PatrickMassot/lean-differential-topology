@@ -1,5 +1,4 @@
 import analysis.metric_space
-import ineq
 
 local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
 
