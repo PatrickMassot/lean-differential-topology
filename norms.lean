@@ -232,6 +232,9 @@ instance normed_field.to_normed_ring [H : normed_field α] : normed_ring α :=
   norm_mul := by finish[H.norm_mul],
  ..H }
 
+ instance : normed_field ℝ := sorry
+ 
+
 class normed_space (α β : Type*) [normed_field α] extends vector_space α β, metric_space β :=
 (norm : β → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
