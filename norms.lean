@@ -5,6 +5,8 @@ import analysis.topology.continuity
 import data.prod
 import tactic.norm_num
 
+import squeeze
+
 noncomputable theory
 
 local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
@@ -84,7 +86,7 @@ begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[
 
 lemma norm_proj2_le (x : G × H) : ∥x.2∥ ≤ ∥x∥ :=
 begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[le_max_right], end
--- X should be a topological space but need to wait for mathlib issue #35
+
 lemma tendsto_iff_distance_tendsto_zero { X Y : Type*} [metric_space X] [metric_space Y]
 {f : X → Y} {x : X} {y : Y}: (f →_{x} y) ↔ ((λ x', dist (f x') y) →_{x} 0) :=
 begin
@@ -93,9 +95,21 @@ split,
   have := tendsto_dist lim tendsto_const_nhds, swap, exact y,
   finish[this] },
 { intro lim_dist,
-  --unfold filter.tendsto at *,
-  --rw nhds_eq_metric,
-  admit }
+  apply  tendsto_nhds_of_metric.2,
+  have lim_dist' := tendsto_nhds_of_metric.1 lim_dist,
+  have tauto : ∀ (x : X) (y : Y), dist (dist (f x) y) 0 = dist (f x) y, 
+    assume x y, calc dist (dist (f x) y) 0 = abs ((dist (f x) y) - 0) : rfl
+    ... = abs (dist (f x) y) : by simp
+    ... = dist (f x) y : abs_of_nonneg dist_nonneg,
+
+  -- starting from here I would like to say rw[tauto] but I can't
+  intros ε ε_pos,
+  rcases (lim_dist' ε ε_pos) with ⟨δ, δ_pos, prop⟩,
+  existsi [δ, δ_pos],
+  intros x_1 dist_x_1,
+  have :=  prop dist_x_1,
+  rw tauto at this,
+  exact this }
 end
 
 lemma tendsto_iff_norm_tendsto_zero (f : G → H) (a : G) (b : H) : (f →_{a} b) ↔ ((λ e, ∥ f e - b ∥) →_{a} 0) :=
@@ -115,9 +129,9 @@ end
 lemma lim_norm_zero  : ((λ g, ∥g∥) : G → ℝ) →_{0} 0 :=
 by simpa using lim_norm (0:G)
 
-set_option trace.class_instances true
-/- The next instance used to work but go into infinite instance resolution loop with new real numbers.
 
+/- The next instance used to work but go into infinite instance resolution loop with new real numbers.
+-/
 instance normed_top_monoid  : topological_add_monoid G  := 
 { continuous_add := begin 
 apply continuous_iff_tendsto.2 _,
@@ -137,14 +151,14 @@ clear ineq1,
 have ineq2 : ∀ e : G × G, ∥ e.snd - x.snd∥ ≤ ∥e - x∥ := assume e, norm_proj2_le (e-x),
 have lim2 : (λ e : G × G, ∥ e.snd - x.snd∥) →_{x} 0 := squeeze_zero _ _ x (by simp[norm_nonneg]) ineq2 _, 
 clear ineq2, 
-
+have : topological_add_monoid ℝ := sorry,
 have := tendsto_add lim1 lim2,
 simpa using this,
 
 exact lim_norm x,
 exact lim_norm x,
 end }
--/
+
 end normed_group
 
 class normed_ring (α : Type*) extends ring α, metric_space α :=
@@ -224,9 +238,18 @@ class normed_space (α β : Type*) [normed_field α] extends vector_space α β,
 (norm_smul : ∀ a b, norm (a • b) = normed_field.norm a * norm b)
 variables  [normed_field α] [module α β]
 
--- Following instance used to work but not any longer
+-- Following instance will wait until Lean is fixed
 instance normed_space.to_normed_group [normed_field α] [H : normed_space α β] : normed_group β :=
-{ to_uniform_space := H.to_uniform_space, 
+{ add := sorry,
+  dist_eq := sorry,
+  add_assoc := begin sorry end,
+  add_comm := begin sorry end,
+  zero := begin sorry end,
+  zero_add := begin sorry end,
+  add_zero := begin sorry end,
+  neg := begin sorry end,
+  add_left_neg := begin sorry end,
+  to_uniform_space := H.to_uniform_space, 
   ..H }
 
 lemma norm_smul {α : Type*} { β : Type*} [normed_field α] [normed_space α β] (s : α) (x : β) : ∥s • x∥ = ∥s∥ * ∥x∥ :=
@@ -266,10 +289,14 @@ instance product_normed_space : normed_space k (E × F) :=
       ... = max (∥s∥ * ∥x₁∥) (∥s∥ * ∥x₂∥) : by simp[norm_smul s x₁, norm_smul s x₂]
       ... = ∥s∥ * max (∥x₁∥) (∥x₂∥) : by simp[max_mul_nonneg, norm_nonneg]
   end,
-  -- Following two lines previsouly worked without me understand why they were needed.
-  -- Now they fail
-  add_smul := by simp[add_smul],
-  smul_add := by simp[smul_add],
+  
+  add_smul := sorry,
+   /-begin intros r s x, cases x with e f, have := calc 
+   (r + s) • (e, f) = ((r + s) • e, (r + s) • f) : rfl
+   ... = (r • e + s • e, r • f  + s • f) : by {rw[add_smul],rw[add_smul], refl},
+   sorry
+    end,-/
+  smul_add := sorry,
   to_uniform_space := prod.normed_group.to_uniform_space,
   ..prod.normed_group, 
   ..prod.vector_space }
