@@ -1,4 +1,5 @@
-import normed_vector_space
+import analysis.real 
+import norms
 
 noncomputable theory
 local attribute [instance] classical.prop_decidable
@@ -7,7 +8,7 @@ local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
 local notation `∥` e `∥` := norm e
 
 section differential
-variables {E : Type*} {F : Type*} {G : Type*} [normed_space E] [normed_space F] [normed_space G]
+variables {E : Type*} {F : Type*} {G : Type*} [normed_space ℝ E] [normed_space ℝ F] [normed_space ℝ G]
 
 def is_differential  (f : E → F) (a : E) (L : E → F) : Prop :=
 (is_continuous_linear_map L) ∧ (∃ ε : E → F, (∀ h, f (a + h) =  f a + L h + ∥h∥ • ε h) ∧  (ε →_{0} 0))
