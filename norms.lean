@@ -1,3 +1,4 @@
+import analysis.real
 import algebra.group
 import algebra.linear_algebra.prod_module
 import analysis.metric_space
@@ -151,7 +152,6 @@ clear ineq1,
 have ineq2 : ∀ e : G × G, ∥ e.snd - x.snd∥ ≤ ∥e - x∥ := assume e, norm_proj2_le (e-x),
 have lim2 : (λ e : G × G, ∥ e.snd - x.snd∥) →_{x} 0 := squeeze_zero _ _ x (by simp[norm_nonneg]) ineq2 _, 
 clear ineq2, 
-have : topological_add_monoid ℝ := sorry,
 have := tendsto_add lim1 lim2,
 simpa using this,
 
@@ -232,7 +232,6 @@ instance normed_field.to_normed_ring [H : normed_field α] : normed_ring α :=
   norm_mul := by finish[H.norm_mul],
  ..H }
 
- instance : normed_field ℝ := sorry
  
 
 class normed_space (α β : Type*) [normed_field α] extends vector_space α β, metric_space β :=
@@ -240,20 +239,27 @@ class normed_space (α β : Type*) [normed_field α] extends vector_space α β,
 (dist_eq : ∀ x y, dist x y = norm (x - y))
 (norm_smul : ∀ a b, norm (a • b) = normed_field.norm a * norm b)
 variables  [normed_field α] [module α β]
-
+--set_option pp.all true
 -- Following instance will wait until Lean is fixed
 instance normed_space.to_normed_group [normed_field α] [H : normed_space α β] : normed_group β :=
-{ add := sorry,
-  dist_eq := sorry,
-  add_assoc := begin sorry end,
-  add_comm := begin sorry end,
-  zero := begin sorry end,
-  zero_add := begin sorry end,
-  add_zero := begin sorry end,
-  neg := begin sorry end,
-  add_left_neg := begin sorry end,
+{ add := (+),
+  dist_eq := begin 
+      have := normed_space.dist_eq α,
+      swap, exact β, 
+      swap, exact H, 
+      -- following won't work
+      -- exact this,  
+      sorry end,
+  add_assoc := by simp,
+  add_comm := by simp,
+  zero := 0,
+  zero_add := by simp,
+  add_zero := by simp,
+  neg := λ x, -x,
+  add_left_neg := by simp,
   to_uniform_space := H.to_uniform_space, 
   ..H }
+
 
 lemma norm_smul {α : Type*} { β : Type*} [normed_field α] [normed_space α β] (s : α) (x : β) : ∥s • x∥ = ∥s∥ * ∥x∥ :=
 normed_space.norm_smul _ _
