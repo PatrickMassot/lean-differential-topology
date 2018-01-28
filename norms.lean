@@ -38,6 +38,7 @@ calc
    ... ≤ dist g 0 + dist 0 (-h) : by apply dist_triangle
    ... = ∥g∥ + ∥h∥               : by simp[norm_dist']
 
+@[simp]
 lemma norm_nonneg {g : G} : 0 ≤ ∥g∥ :=
 by { rw[←norm_dist], exact dist_nonneg }
 
@@ -144,13 +145,13 @@ have ineq := λ e: G × G, calc
  ∥e.fst + (e.snd + (-x.fst + -x.snd))∥ = ∥(e.fst-x.fst) + (e.snd - x.snd)∥ : by simp
  ... ≤ ∥e.fst - x.fst∥ + ∥ e.snd - x.snd ∥  : norm_triangle (e.fst-x.fst) (e.snd - x.snd),
 
-apply squeeze_zero _ _ x (by simp[norm_nonneg]) ineq,
+apply squeeze_zero _ _ x (by simp) ineq,
 have ineq1 : ∀ e : G × G, ∥ e.fst - x.fst∥ ≤ ∥e - x∥ := assume e, norm_proj1_le (e-x),
-have lim1 : (λ e : G × G, ∥ e.fst - x.fst∥) →_{x} 0 := squeeze_zero _ _ x (by simp[norm_nonneg]) ineq1 _, 
+have lim1 : (λ e : G × G, ∥ e.fst - x.fst∥) →_{x} 0 := squeeze_zero _ _ x (by simp) ineq1 _, 
 clear ineq1,
 
 have ineq2 : ∀ e : G × G, ∥ e.snd - x.snd∥ ≤ ∥e - x∥ := assume e, norm_proj2_le (e-x),
-have lim2 : (λ e : G × G, ∥ e.snd - x.snd∥) →_{x} 0 := squeeze_zero _ _ x (by simp[norm_nonneg]) ineq2 _, 
+have lim2 : (λ e : G × G, ∥ e.snd - x.snd∥) →_{x} 0 := squeeze_zero _ _ x (by simp) ineq2 _, 
 clear ineq2, 
 have := tendsto_add lim1 lim2,
 simpa using this,
@@ -213,7 +214,7 @@ instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α ×
     ∥x * y∥ = ∥(x.1*y.1, x.2*y.2)∥ : rfl 
         ... = (max ∥x.1*y.1∥  ∥x.2*y.2∥) : rfl
         ... ≤ (max (∥x.1∥*∥y.1∥) (∥x.2∥*∥y.2∥)) : max_le_max (norm_mul (x.1) (y.1)) (norm_mul (x.2) (y.2))                                                   
-        ... ≤ (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by { apply max_prod_prod_le_max_prod_max _ _ _; exact norm_nonneg }
+        ... ≤ (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by { apply max_prod_prod_le_max_prod_max _ _ _; simp }
         ... = (∥x∥*∥y∥) : rfl,
   dist_eq := normed_group.dist_eq,
   to_ring:=prod.ring,
@@ -238,28 +239,14 @@ class normed_space (α β : Type*) [normed_field α] extends vector_space α β,
 (norm : β → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
 (norm_smul : ∀ a b, norm (a • b) = normed_field.norm a * norm b)
-variables  [normed_field α] [module α β]
---set_option pp.all true
--- Following instance will wait until Lean is fixed
-instance normed_space.to_normed_group [normed_field α] [H : normed_space α β] : normed_group β :=
-{ add := (+),
-  dist_eq := begin 
-      have := normed_space.dist_eq α,
-      swap, exact β, 
-      swap, exact H, 
-      -- following won't work
-      -- exact this,  
-      sorry end,
-  add_assoc := by simp,
-  add_comm := by simp,
-  zero := 0,
-  zero_add := by simp,
-  add_zero := by simp,
-  neg := λ x, -x,
-  add_left_neg := by simp,
-  to_uniform_space := H.to_uniform_space, 
-  ..H }
 
+instance normed_space.to_normed_group [normed_field α] [H : normed_space α β] : normed_group β :=
+by refine { add := (+),
+            dist_eq := normed_space.dist_eq α,
+            zero := 0,
+            neg := λ x, -x,
+            to_uniform_space := H.to_uniform_space, 
+            ..H, .. }; simp
 
 lemma norm_smul {α : Type*} { β : Type*} [normed_field α] [normed_space α β] (s : α) (x : β) : ∥s • x∥ = ∥s∥ * ∥x∥ :=
 normed_space.norm_smul _ _
@@ -296,16 +283,11 @@ instance product_normed_space : normed_space k (E × F) :=
       ∥s • (x₁, x₂)∥ = ∥ (s • x₁, s• x₂)∥ : rfl
       ... = max (∥s • x₁∥) (∥ s• x₂∥) : rfl
       ... = max (∥s∥ * ∥x₁∥) (∥s∥ * ∥x₂∥) : by simp[norm_smul s x₁, norm_smul s x₂]
-      ... = ∥s∥ * max (∥x₁∥) (∥x₂∥) : by simp[max_mul_nonneg, norm_nonneg]
+      ... = ∥s∥ * max (∥x₁∥) (∥x₂∥) : by simp[max_mul_nonneg]
   end,
   
-  add_smul := sorry,
-   /-begin intros r s x, cases x with e f, have := calc 
-   (r + s) • (e, f) = ((r + s) • e, (r + s) • f) : rfl
-   ... = (r • e + s • e, r • f  + s • f) : by {rw[add_smul],rw[add_smul], refl},
-   sorry
-    end,-/
-  smul_add := sorry,
+  add_smul := by simp[add_smul], 
+  smul_add := by simp[smul_add],
   to_uniform_space := prod.normed_group.to_uniform_space,
   ..prod.normed_group, 
   ..prod.vector_space }
