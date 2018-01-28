@@ -8,6 +8,10 @@ variables {E : Type*}  [normed_space k E]
 variables {F : Type*} [normed_space k F]
 variables {G : Type*} [normed_space k G]
 
+--set_option trace.class_instances true
+example : normed_group E := @normed_space.to_normed_group k _ _ _
+
+#print normed_space.to_normed_group
 -- TODO: relate to is_continuous
 def is_continuous_linear_map (L : E → F) := (is_linear_map L) ∧  ∃ M, M > 0 ∧ ∀ x : E, ∥ L x ∥ ≤ M *∥ x ∥ 
 
