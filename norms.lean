@@ -70,18 +70,10 @@ begin
 end
 
 instance prod.normed_group {F : Type*} [normed_group F] : normed_group (G × F) :=
-{norm := λ x, max ∥x.1∥ ∥x.2∥,
-dist_eq := begin
-  intros x y, 
-  have h₁: ∥(x - y).fst∥ = ∥x.fst - y.fst∥, by simp,
-  rw[←norm_dist'] at h₁,
-  have h₂: ∥(x - y).snd∥ = ∥x.snd - y.snd∥, by simp,
-  rw[←norm_dist'] at h₂,
-  rw[h₁, h₂],
-  refl
-end,
-to_metric_space := prod.metric_space_max,
-to_add_comm_group := prod.add_comm_group }
+{ norm := λ x, max ∥x.1∥ ∥x.2∥,
+  dist_eq := assume x y, by { simp, repeat {rw norm_dist'}, simp },
+  ..prod.metric_space_max,
+  ..prod.add_comm_group }
 
 lemma norm_proj1_le (x : G × H) : ∥x.1∥ ≤ ∥x∥ :=
 begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[le_max_left], end
@@ -169,8 +161,7 @@ class normed_ring (α : Type*) extends ring α, metric_space α :=
 
 variables {α : Type*} {β : Type*}
 
-instance normed_ring.to_normed_group [H : normed_ring α] : normed_group α :=
-{ to_uniform_space := H.to_uniform_space, ..H }
+instance normed_ring.to_normed_group [H : normed_ring α] : normed_group α := { ..H }
 
 lemma norm_mul {α : Type*} [normed_ring α] (a b : α) : (∥a*b∥) ≤ (∥a∥) * (∥b∥) :=
 normed_ring.norm_mul _ _
@@ -216,11 +207,8 @@ instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α ×
         ... ≤ (max (∥x.1∥*∥y.1∥) (∥x.2∥*∥y.2∥)) : max_le_max (norm_mul (x.1) (y.1)) (norm_mul (x.2) (y.2))                                                   
         ... ≤ (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by { apply max_prod_prod_le_max_prod_max _ _ _; simp }
         ... = (∥x∥*∥y∥) : rfl,
-  dist_eq := normed_group.dist_eq,
-  to_ring:=prod.ring,
-  to_uniform_space := prod.normed_group.to_uniform_space,
-..prod.normed_group,
-}
+  ..prod.ring,
+  ..prod.normed_group }
 
 
 class normed_field (α : Type*) extends discrete_field α, metric_space α :=
@@ -229,9 +217,7 @@ class normed_field (α : Type*) extends discrete_field α, metric_space α :=
 (norm_mul : ∀ a b, norm (a * b) = norm a * norm b)
 
 instance normed_field.to_normed_ring [H : normed_field α] : normed_ring α :=
-{ to_uniform_space := H.to_uniform_space,
-  norm_mul := by finish[H.norm_mul],
- ..H }
+{ norm_mul := by finish[H.norm_mul], ..H }
 
  
 
@@ -245,7 +231,6 @@ by refine { add := (+),
             dist_eq := normed_space.dist_eq α,
             zero := 0,
             neg := λ x, -x,
-            to_uniform_space := H.to_uniform_space, 
             ..H, .. }; simp
 
 lemma norm_smul {α : Type*} { β : Type*} [normed_field α] [normed_space α β] (s : α) (x : β) : ∥s • x∥ = ∥s∥ * ∥x∥ :=
@@ -288,6 +273,5 @@ instance product_normed_space : normed_space k (E × F) :=
   
   add_smul := by simp[add_smul], 
   smul_add := by simp[smul_add],
-  to_uniform_space := prod.normed_group.to_uniform_space,
   ..prod.normed_group, 
   ..prod.vector_space }
