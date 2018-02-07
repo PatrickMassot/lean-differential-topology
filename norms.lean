@@ -167,7 +167,7 @@ lemma norm_mul {α : Type*} [normed_ring α] (a b : α) : (∥a*b∥) ≤ (∥a�
 normed_ring.norm_mul _ _
 
 
-def prod.ring [ring α] [ring β] : ring (α × β) :=
+instance prod.ring [ring α] [ring β] : ring (α × β) :=
 { left_distrib := assume x y z, calc
     x*(y+z) = (x.1, x.2) * (y.1 + z.1, y.2 + z.2) : rfl
     ... = (x.1*(y.1 + z.1), x.2*(y.2 + z.2)) : rfl
@@ -221,14 +221,14 @@ instance normed_field.to_normed_ring [H : normed_field α] : normed_ring α :=
 
  
 
-class normed_space (α β : Type*) [normed_field α] extends vector_space α β, metric_space β :=
+class normed_space (α : out_param $ Type*) (β : Type*) [out_param $ normed_field α] extends vector_space α β, metric_space β :=
 (norm : β → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
 (norm_smul : ∀ a b, norm (a • b) = normed_field.norm a * norm b)
 
 instance normed_space.to_normed_group [normed_field α] [H : normed_space α β] : normed_group β :=
 by refine { add := (+),
-            dist_eq := normed_space.dist_eq α,
+            dist_eq := normed_space.dist_eq,
             zero := 0,
             neg := λ x, -x,
             ..H, .. }; simp
@@ -272,6 +272,8 @@ instance product_normed_space : normed_space k (E × F) :=
   end,
   
   add_smul := by simp[add_smul], 
-  smul_add := by simp[smul_add],
+  -- I have no idea why by simp[smul_add] is not enough for the next goal
+  smul_add := assume r x y,  show (r•(x+y).fst, r•(x+y).snd)  = (r•x.fst+r•y.fst, r•x.snd+r•y.snd), 
+               from by simp[smul_add],             
   ..prod.normed_group, 
   ..prod.vector_space }
