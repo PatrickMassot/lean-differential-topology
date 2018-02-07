@@ -8,14 +8,10 @@ variables {E : Type*}  [normed_space k E]
 variables {F : Type*} [normed_space k F]
 variables {G : Type*} [normed_space k G]
 
---set_option trace.class_instances true
-example : normed_group E := @normed_space.to_normed_group k _ _ _
-
-#print normed_space.to_normed_group
 -- TODO: relate to is_continuous
+include k
 def is_continuous_linear_map (L : E → F) := (is_linear_map L) ∧  ∃ M, M > 0 ∧ ∀ x : E, ∥ L x ∥ ≤ M *∥ x ∥ 
 
--- TODO: Clean up this proof
 lemma comp_continuous_linear_map (L : E → F) (P : F → G) : 
 is_continuous_linear_map L → is_continuous_linear_map P → is_continuous_linear_map (P ∘ L) :=
 begin
@@ -24,24 +20,13 @@ rcases HL with ⟨lin_L , M, Mpos, ineq_L⟩,
 rcases HP with ⟨lin_P , M', M'pos, ineq_P⟩,
 split,
 { exact is_linear_map.comp lin_P lin_L },
-{ existsi M*M',
+{ existsi M'*M,
   split,
-  { exact mul_pos Mpos M'pos },
-  { unfold function.comp,
-    intro x,
-    specialize ineq_P (L x),
-    specialize ineq_L x,
-    have fact : M'*∥L x∥ ≤ M * M' * ∥x∥ := -- prepare for PAIN
-      begin 
-      have ineq := mul_le_mul_of_nonneg_left ineq_L (le_of_lt M'pos),
-      rw mul_comm, 
-      rw mul_comm at ineq, 
-      rw ←mul_assoc at ineq,
-      rw mul_comm M,  
-      exact ineq
-      end ,
-    exact le_trans ineq_P fact }
-   }
+  { exact mul_pos M'pos Mpos },
+  { intro x,
+    exact calc
+      ∥P (L x)∥ ≤ M' * ∥L x∥ : ineq_P (L x)
+            ... ≤  M'*M*∥x∥ : by simp[mul_assoc, mul_le_mul_of_nonneg_left (ineq_L x) (le_of_lt M'pos)] } }
 end
 
 lemma lim_zero_cont_lin_map (L : E → F) : is_continuous_linear_map L → (L →_{0} 0) :=
