@@ -2,6 +2,7 @@ import analysis.real
 import algebra.group
 import algebra.linear_algebra.prod_module
 import analysis.metric_space
+import order.filter
 import analysis.topology.continuity
 import data.prod
 import tactic.norm_num
@@ -67,6 +68,21 @@ begin
   rw[show ∥-g∥ = ∥0-g∥, by simp],
   repeat {rw[←norm_dist']},
   exact dist_comm 0 g
+end
+
+lemma norm_triangle' (g h : G) : abs(∥g∥ - ∥h∥) ≤ ∥g - h∥ := 
+begin
+  have ng := calc ∥g∥ = ∥g - h + h∥ : by simp
+  ... ≤ ∥g-h∥ + ∥h∥ : norm_triangle _ _,
+  replace ng := sub_right_le_of_le_add ng,
+  have nh := calc ∥h∥ = ∥h - g + g∥ : by simp
+  ... ≤ ∥h - g∥ + ∥g∥ : norm_triangle _ _
+  ... = ∥-(g - h)∥ + ∥g∥ : by simp
+  ... = ∥g - h∥ + ∥g∥ : by { rw [show ∥-(g - h)∥ = ∥g-h∥, from norm_neg] },
+  replace nh := sub_right_le_of_le_add nh,
+  replace nh : -(∥g∥ - ∥h∥) ≤ ∥g - h∥ := by simpa using nh,
+  replace nh : -∥g - h∥ ≤ ∥g∥ - ∥h∥ := by simpa using neg_le_neg nh,
+  exact abs_le.2 ⟨nh, ng⟩
 end
 
 instance prod.normed_group {F : Type*} [normed_group F] : normed_group (G × F) :=
@@ -219,7 +235,27 @@ class normed_field (α : Type*) extends discrete_field α, metric_space α :=
 instance normed_field.to_normed_ring [H : normed_field α] : normed_ring α :=
 { norm_mul := by finish[H.norm_mul], ..H }
 
- 
+ instance : normed_field ℝ :=
+ { norm := λ x, abs x, 
+   dist_eq := assume x y, rfl,
+   norm_mul := abs_mul}
+
+-- TODO Clean following proof
+-- This proof comes late because it uses that ℝ is a normed group
+lemma norm_continuous {G : Type*} [normed_group G]: continuous ((λ g, ∥g∥) : G → ℝ) := 
+begin
+apply continuous_iff_tendsto.2,
+intro x,
+have ineq := ∀ g : G, abs(∥g∥ - ∥x∥) ≤ ∥ g -x∥,
+have lim := squeeze_zero (λ g, abs(∥g∥ - ∥x∥)) _ x _ _ (lim_norm x),
+  swap,
+  intro t,
+  exact abs_nonneg _,
+  swap,
+  intro t, simp, exact norm_triangle' t x,
+exact (tendsto_iff_norm_tendsto_zero (λ g : G, ∥g∥) _ _).2 lim
+end
+
 
 class normed_space (α : out_param $ Type*) (β : Type*) [out_param $ normed_field α] extends vector_space α β, metric_space β :=
 (norm : β → ℝ)
@@ -235,6 +271,39 @@ by refine { add := (+),
 
 lemma norm_smul {α : Type*} { β : Type*} [normed_field α] [normed_space α β] (s : α) (x : β) : ∥s • x∥ = ∥s∥ * ∥x∥ :=
 normed_space.norm_smul _ _
+
+variables {k : Type*} [normed_field k] {E : Type*} {F : Type*} [normed_space k E] [normed_space k F]
+
+open filter
+
+lemma tendsto_smul {f : E → k} { g : E → F} {e : E} {s : k} {b : F} :
+(f →_{e} s) → (g →_{e} b) → ((λ e, (f e) • (g e)) →_{e} s • b) := 
+begin
+  intros limf limg,
+  apply (tendsto_iff_norm_tendsto_zero _ _ _).2,
+  have ineq : ∀ x : E, _ := begin 
+    intro x, exact calc 
+      ∥f x • g x - s • b∥ = ∥(f x • g x - s • g x) + (s • g x - s • b)∥ : by simp[add_assoc]
+                      ... ≤ ∥f x • g x - s • g x∥ + ∥s • g x - s • b∥ : norm_triangle (f x • g x - s • g x) (s • g x - s • b)
+                      ... ≤ ∥f x - s∥*∥g x∥ + ∥s∥*∥g x - b∥ : by { rw [←smul_sub, ←sub_smul, norm_smul, norm_smul] },
+  end,
+  apply squeeze_zero,
+  { intro t, exact norm_nonneg },
+  { exact ineq },
+  { clear ineq,
+    have limf': (λ (x : E), ∥f x - s∥)→_{e}0 := (tendsto_iff_norm_tendsto_zero _ _ _).1 limf,
+    have limg' := tendsto.comp limg (continuous_iff_tendsto.1 norm_continuous _),
+    have limg'' : (λ (x : E), ∥g x∥)→_{e} ∥b∥, simp[limg'], clear limg',
+    
+    have lim1  := tendsto_mul limf' limg'', simp at lim1,
+    have limg3 := (tendsto_iff_norm_tendsto_zero _ _ _).1 limg,
+    have lim2  := tendsto_mul tendsto_const_nhds limg3, swap, exact ∥s∥,
+    simp at lim2,
+    
+    have :=  tendsto_add lim1 lim2, simp[this],
+    
+    sorry }
+end
 
 lemma max_monotone_fun {α : Type*} [decidable_linear_order α] {β : Type*} [decidable_linear_order β] 
 {f : α → β} (H : monotone f) (a a' : α)  :  max (f a) (f a') =  f(max a a') :=
@@ -257,7 +326,7 @@ assume a_non_neg b c b_le_c, mul_le_mul_of_nonneg_left b_le_c a_non_neg
 lemma max_mul_nonneg (a b c : ℝ) : 0 ≤ a → max (a*b) (a*c) = a*(max b c) :=
 assume a_nonneg, max_monotone_fun (monotone_mul_nonneg a a_nonneg) b c
 
-variables {k : Type*} [normed_field k] {E : Type*} {F : Type*} [normed_space k E] [normed_space k F]
+
 
 instance product_normed_space : normed_space k (E × F) := 
 { norm_smul := 
