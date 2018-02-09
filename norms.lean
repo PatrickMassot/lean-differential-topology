@@ -140,8 +140,6 @@ lemma lim_norm_zero  : ((λ g, ∥g∥) : G → ℝ) →_{0} 0 :=
 by simpa using lim_norm (0:G)
 
 
-/- The next instance used to work but go into infinite instance resolution loop with new real numbers.
--/
 instance normed_top_monoid  : topological_add_monoid G  := 
 { continuous_add := begin 
 apply continuous_iff_tendsto.2 _,
@@ -235,13 +233,22 @@ class normed_field (α : Type*) extends discrete_field α, metric_space α :=
 instance normed_field.to_normed_ring [H : normed_field α] : normed_ring α :=
 { norm_mul := by finish[H.norm_mul], ..H }
 
- instance : normed_field ℝ :=
- { norm := λ x, abs x, 
-   dist_eq := assume x y, rfl,
-   norm_mul := abs_mul}
+instance : normed_field ℝ :=
+{ norm := λ x, abs x, 
+  dist_eq := assume x y, rfl,
+  norm_mul := abs_mul}
+
+/- The above instance has a huge issue:
+   @normed_field.to_metric_space.{0} real real.normed_field
+   is not defeq real.metric_space 
+   See how this obstruct proving tendsto_smul
+-/
 
 -- TODO Clean following proof
--- This proof comes late because it uses that ℝ is a normed group
+/- This proof comes late because it uses that ℝ is a normed group, 
+   through tendsto_iff_norm_tendsto_zero.
+   Maybe we should rather have a version of tendsto_iff_norm_tendsto_zero 
+   in ℝ without using the norm stuff -/
 lemma norm_continuous {G : Type*} [normed_group G]: continuous ((λ g, ∥g∥) : G → ℝ) := 
 begin
 apply continuous_iff_tendsto.2,
@@ -301,7 +308,16 @@ begin
     simp at lim2,
     
     have :=  tendsto_add lim1 lim2, simp[this],
-    
+    dsimp at this,
+    rw [show (0:ℝ) + 0 = 0, from by simp] at this,
+    have H : (λ x : E, ∥f x + -s∥ * ∥g x∥ + ∥s∥ * ∥g x + -b∥) = λ x : E, ∥f x - s∥ * ∥g x∥ + ∥s∥ * ∥g x - b∥,
+    by simp,
+    rw H at this, clear H limf limg limf' limg3 limg'' lim1 lim2, 
+    /- We have a problem here with
+       @normed_field.to_metric_space.{0} real real.normed_field
+       vs 
+       real.metric_space -/
+    --exact this
     sorry }
 end
 

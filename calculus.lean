@@ -35,7 +35,8 @@ exact ne_of_gt c_pos,
 end
 
 @[simp]
-lemma norm_norm { e : E } : ∥∥e∥∥ = ∥e∥ := sorry
+lemma norm_norm { e : E } : ∥∥e∥∥ = ∥e∥ := 
+abs_of_nonneg norm_nonneg
 
 lemma ineq_prelim (L : E → F) (P : F → G) (ε : E → F) (η : F → G) (MP ML : ℝ) (h : E) 
 (MP_pos : MP > 0)
