@@ -141,30 +141,49 @@ by simpa using lim_norm (0:G)
 
 
 instance normed_top_monoid  : topological_add_monoid G  := 
-{ continuous_add := begin 
-apply continuous_iff_tendsto.2 _,
-intro x,
-have := (tendsto_iff_norm_tendsto_zero (λ (p : G × G), p.fst + p.snd) x (x.1 + x.2)).2,
-apply this, clear this,
-simp,
-have ineq := λ e: G × G, calc
- ∥e.fst + (e.snd + (-x.fst + -x.snd))∥ = ∥(e.fst-x.fst) + (e.snd - x.snd)∥ : by simp
- ... ≤ ∥e.fst - x.fst∥ + ∥ e.snd - x.snd ∥  : norm_triangle (e.fst-x.fst) (e.snd - x.snd),
+⟨begin 
+  apply continuous_iff_tendsto.2 _,
+  intro x,
+  have := (tendsto_iff_norm_tendsto_zero (λ (p : G × G), p.fst + p.snd) x (x.1 + x.2)).2,
+  apply this, clear this,
+  simp,
+  have ineq := λ e: G × G, calc
+  ∥e.fst + (e.snd + (-x.fst + -x.snd))∥ = ∥(e.fst-x.fst) + (e.snd - x.snd)∥ : by simp
+  ... ≤ ∥e.fst - x.fst∥ + ∥ e.snd - x.snd ∥  : norm_triangle (e.fst-x.fst) (e.snd - x.snd),
 
-apply squeeze_zero _ _ x (by simp) ineq,
-have ineq1 : ∀ e : G × G, ∥ e.fst - x.fst∥ ≤ ∥e - x∥ := assume e, norm_proj1_le (e-x),
-have lim1 : (λ e : G × G, ∥ e.fst - x.fst∥) →_{x} 0 := squeeze_zero _ _ x (by simp) ineq1 _, 
-clear ineq1,
+  apply squeeze_zero _ _ x (by simp) ineq,
+  have ineq1 : ∀ e : G × G, ∥ e.fst - x.fst∥ ≤ ∥e - x∥ := assume e, norm_proj1_le (e-x),
+  have lim1 : (λ e : G × G, ∥ e.fst - x.fst∥) →_{x} 0 := squeeze_zero _ _ x (by simp) ineq1 _, 
+  clear ineq1,
 
-have ineq2 : ∀ e : G × G, ∥ e.snd - x.snd∥ ≤ ∥e - x∥ := assume e, norm_proj2_le (e-x),
-have lim2 : (λ e : G × G, ∥ e.snd - x.snd∥) →_{x} 0 := squeeze_zero _ _ x (by simp) ineq2 _, 
-clear ineq2, 
-have := tendsto_add lim1 lim2,
-simpa using this,
+  have ineq2 : ∀ e : G × G, ∥ e.snd - x.snd∥ ≤ ∥e - x∥ := assume e, norm_proj2_le (e-x),
+  have lim2 : (λ e : G × G, ∥ e.snd - x.snd∥) →_{x} 0 := squeeze_zero _ _ x (by simp) ineq2 _, 
+  clear ineq2, 
+  have := tendsto_add lim1 lim2,
+  simpa using this,
 
-exact lim_norm x,
-exact lim_norm x,
-end }
+  exact lim_norm x,
+  exact lim_norm x,
+end⟩
+
+instance normed_top_group  : topological_add_group G  := 
+{ continuous_neg := begin
+  apply continuous_iff_tendsto.2,
+  intro x,
+  apply (tendsto_iff_norm_tendsto_zero _ _ _).2,
+  simp,
+  have neg := λ (e : G), calc
+  ∥ x + -e∥ = ∥ -(e -x)∥ : by simp
+  ... =  ∥e - x∥ : norm_neg,
+  conv in _ {rw [neg]},
+
+  have lim_negx : (λ (e : G), -x )→_{x} -x:= tendsto_const_nhds,
+  have lim_e : (λ (e : G), e )→_{x} x := continuous_iff_tendsto.1 continuous_id x,
+  have := tendsto_add lim_negx lim_e,
+  simp at this,
+  simpa using filter.tendsto.comp this lim_norm_zero
+end,
+..normed_top_monoid }
 
 end normed_group
 
@@ -307,18 +326,9 @@ begin
     have lim2  := tendsto_mul tendsto_const_nhds limg3, swap, exact ∥s∥,
     simp at lim2,
     
-    have :=  tendsto_add lim1 lim2, simp[this],
-    dsimp at this,
+    have :=  tendsto_add lim1 lim2, 
     rw [show (0:ℝ) + 0 = 0, from by simp] at this,
-    have H : (λ x : E, ∥f x + -s∥ * ∥g x∥ + ∥s∥ * ∥g x + -b∥) = λ x : E, ∥f x - s∥ * ∥g x∥ + ∥s∥ * ∥g x - b∥,
-    by simp,
-    rw H at this, clear H limf limg limf' limg3 limg'' lim1 lim2, 
-    /- We have a problem here with
-       @normed_field.to_metric_space.{0} real real.normed_field
-       vs 
-       real.metric_space -/
-    --exact this
-    sorry }
+    exact this }
 end
 
 lemma max_monotone_fun {α : Type*} [decidable_linear_order α] {β : Type*} [decidable_linear_order β] 
