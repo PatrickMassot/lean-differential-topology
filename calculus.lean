@@ -13,7 +13,7 @@ section differential
 variables {E : Type*} {F : Type*} {G : Type*} [normed_space ℝ E] [normed_space ℝ F] [normed_space ℝ G]
 
 def is_differential  (f : E → F) (a : E) (L : E → F) : Prop :=
-(is_continuous_linear_map L) ∧ (∃ ε : E → F, (∀ h, f (a + h) =  f a + L h + ∥h∥ • ε h) ∧  (ε →_{0} 0))
+(is_bounded_linear_map L) ∧ (∃ ε : E → F, (∀ h, f (a + h) =  f a + L h + ∥h∥ • ε h) ∧  (ε →_{0} 0))
 
 @[refl]
 lemma real_refl {a:ℝ} : a ≤ a := le_refl _
