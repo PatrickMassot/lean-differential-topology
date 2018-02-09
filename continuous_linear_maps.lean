@@ -1,5 +1,8 @@
 import norms
 
+noncomputable theory
+local attribute [instance] classical.prop_decidable
+
 local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
 
 
@@ -57,3 +60,52 @@ end
 
 lemma lim_zero_bounded_linear_map {L : E → F} (H : is_bounded_linear_map L) : (L →_{0} 0) :=
 by simpa [H.left.zero] using continuous_iff_tendsto.1 (continuous_bounded_linear_map H) 0
+
+-- Next lemma is stated for real normed space but it would work as soon as the base field is an extension of ℝ
+lemma bounded_continuous_linear_map {E : Type*}  [normed_space ℝ E] {F : Type*}  [normed_space ℝ F] {L : E → F} 
+(lin : is_linear_map L) (cont : continuous L ) : is_bounded_linear_map L :=
+begin
+  split,
+  exact lin,
+
+  replace cont := continuous_of_metric.1 cont 1 (by norm_num),
+  swap, exact 0,
+  rw[lin.zero] at cont,
+  --have fact : ∃ (δ : ℝ) (δ_pos : δ > 0), (∀ (e : E), ∥e∥ ≤ δ → ∥L e∥ ≤ 1),
+  rcases cont with ⟨δ, δ_pos, H⟩,
+  revert H,
+  repeat { conv in (_ < _ ) { rw norm_dist } },
+  intro H,
+  existsi (2/δ),
+  split,
+  exact div_pos two_pos δ_pos,
+  intro x,
+  by_cases h : x = 0,
+  { simp [h, lin.zero] }, -- case x = 0
+  { -- case x ≠ 0   
+    have two_norm_x_pos : 2*∥x∥ > 0 := mul_pos two_pos (norm_pos_iff.2 h),
+    let p := 2*∥x∥/δ,
+    have p_pos : p > 0 := div_pos two_norm_x_pos δ_pos,
+    let q := δ/(2*∥x∥),
+    have q_pos : q > 0 := div_pos δ_pos two_norm_x_pos,
+    have triv : p*q = (1:ℝ) := sorry,
+
+    have norm_x : ∥x∥ ≠ 0 := mt norm_zero_iff_zero.1 h,
+    
+    have norm_calc := calc ∥(δ/(2*∥x∥))•x∥ = abs(δ/(2*∥x∥))*∥x∥ : by {rw norm_smul, refl}
+    ... = δ/(2*∥x∥)*∥x∥ : by rw [abs_of_nonneg $ le_of_lt q_pos]
+    ... = δ/2 : sorry
+    ... < δ : sorry,
+    
+  exact calc 
+  ∥L x∥ = ∥L (1•x)∥: by simp
+  ... = ∥L ((p*q)•x) ∥ : by {rw [←triv] }
+  ... = ∥L (p•q•x) ∥ : by rw mul_smul
+  ... = ∥p•L (q•x) ∥ : by rw lin.smul
+  ... = abs(p)*∥L (q•x) ∥ : by { rw norm_smul, refl}
+  ... = p*∥L (q•x) ∥ : by rw [abs_of_nonneg $ le_of_lt $ p_pos]
+  ... ≤ p*1 : le_of_lt $ mul_lt_mul_of_pos_left (H norm_calc) p_pos 
+  ... = (2*∥x∥)/δ : by simp
+  ... = (2/δ)*∥x∥ : sorry,
+}
+end
