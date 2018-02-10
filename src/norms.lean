@@ -196,6 +196,7 @@ instance normed_top_group  : topological_add_group G  :=
 
 end normed_group
 
+section normed_ring
 class normed_ring (α : Type*) extends ring α, metric_space α :=
 (norm : α → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
@@ -231,7 +232,10 @@ instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α ×
         ... = (∥x∥*∥y∥) : rfl,
   ..prod.ring,
   ..prod.normed_group }
+end normed_ring
 
+section normed_field
+variables {α : Type*}
 
 class normed_field (α : Type*) extends discrete_field α, metric_space α :=
 (norm : α → ℝ)
@@ -246,43 +250,46 @@ instance : normed_field ℝ :=
   dist_eq := assume x y, rfl,
   norm_mul := abs_mul}
 
+end normed_field
+
+section normed_space
 
 class normed_space (α : out_param $ Type*) (β : Type*) [out_param $ normed_field α] extends vector_space α β, metric_space β :=
 (norm : β → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
 (norm_smul : ∀ a b, norm (a • b) = normed_field.norm a * norm b)
 
-instance normed_space.to_normed_group [normed_field α] [H : normed_space α β] : normed_group β :=
+variables {α : Type*} [normed_field α]  {β : Type*}
+
+instance normed_space.to_normed_group [H : normed_space α β] : normed_group β :=
 by refine { add := (+),
             dist_eq := normed_space.dist_eq,
             zero := 0,
             neg := λ x, -x,
             ..H, .. }; simp
 
-lemma norm_smul {α : Type*} { β : Type*} [normed_field α] [normed_space α β] (s : α) (x : β) : ∥s • x∥ = ∥s∥ * ∥x∥ :=
+variable [normed_space α β] 
+
+lemma norm_smul (s : α) (x : β) : ∥s • x∥ = ∥s∥ * ∥x∥ :=
 normed_space.norm_smul _ _
 
-variables {k : Type*} [normed_field k] {E : Type*} {F : Type*} [normed_space k E] [normed_space k F]
+variables {E : Type*} {F : Type*} [normed_space α E] [normed_space α F]
 
-open filter
-
-lemma tendsto_smul {f : E → k} { g : E → F} {e : E} {s : k} {b : F} :
+lemma tendsto_smul {f : E → α} { g : E → F} {e : E} {s : α} {b : F} :
 (f →_{e} s) → (g →_{e} b) → ((λ e, (f e) • (g e)) →_{e} s • b) := 
 begin
   intros limf limg,
   apply tendsto_iff_norm_tendsto_zero.2,
-  have ineq : ∀ x : E, _ := begin 
-    intro x, exact calc 
+  have ineq := λ x : E, calc 
       ∥f x • g x - s • b∥ = ∥(f x • g x - s • g x) + (s • g x - s • b)∥ : by simp[add_assoc]
                       ... ≤ ∥f x • g x - s • g x∥ + ∥s • g x - s • b∥ : norm_triangle (f x • g x - s • g x) (s • g x - s • b)
                       ... ≤ ∥f x - s∥*∥g x∥ + ∥s∥*∥g x - b∥ : by { rw [←smul_sub, ←sub_smul, norm_smul, norm_smul] },
-  end,
   apply squeeze_zero,
   { intro t, exact norm_nonneg },
   { exact ineq },
   { clear ineq,
     have limf': (λ (x : E), ∥f x - s∥)→_{e}0 := tendsto_iff_norm_tendsto_zero.1 limf,
-    have limg' := tendsto.comp limg (continuous_iff_tendsto.1 norm_continuous _),
+    have limg' := filter.tendsto.comp limg (continuous_iff_tendsto.1 norm_continuous _),
     have limg'' : (λ (x : E), ∥g x∥)→_{e} ∥b∥, simp[limg'], clear limg',
     
     have lim1  := tendsto_mul limf' limg'', simp at lim1,
@@ -295,8 +302,13 @@ begin
     exact this }
 end
 
+/- Do we want the following? I have difficulties with instances to set it up 
+class topological_vector_space (E : Type*) [topological_space E] [vector_space α E]
+  extends topological_add_group E : Prop :=
+  (continuous_smul : continuous (λ x : α×E, x.1• x.2))
+-/
 
-instance product_normed_space : normed_space k (E × F) := 
+instance product_normed_space : normed_space α (E × F) := 
 { norm_smul := 
   begin 
     intros s x,
@@ -314,3 +326,4 @@ instance product_normed_space : normed_space k (E × F) :=
                from by simp[smul_add],             
   ..prod.normed_group, 
   ..prod.vector_space }
+  end normed_space
