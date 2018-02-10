@@ -298,7 +298,7 @@ begin
     simp at lim2,
     
     have :=  tendsto_add lim1 lim2, 
-    rw [show (0:ℝ) + 0 = 0, from by simp] at this,
+    rw [show (0:ℝ) + 0 = 0, by simp] at this,
     exact this }
 end
 
@@ -323,7 +323,7 @@ instance product_normed_space : normed_space α (E × F) :=
   add_smul := by simp[add_smul], 
   -- I have no idea why by simp[smul_add] is not enough for the next goal
   smul_add := assume r x y,  show (r•(x+y).fst, r•(x+y).snd)  = (r•x.fst+r•y.fst, r•x.snd+r•y.snd), 
-               from by simp[smul_add],             
+               by simp[smul_add],             
   ..prod.normed_group, 
   ..prod.vector_space }
   end normed_space
