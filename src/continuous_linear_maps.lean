@@ -37,7 +37,7 @@ begin
   rcases H with ⟨lin, M, Mpos, ineq⟩,
   apply continuous_iff_tendsto.2,
   intro x,
-  apply (tendsto_iff_norm_tendsto_zero _ _ _).2,
+  apply tendsto_iff_norm_tendsto_zero.2,
   replace ineq := λ e, calc ∥L e - L x∥ = ∥L (e - x)∥ : by rw [←(lin.sub e x)]
   ... ≤ M*∥e-x∥ : ineq (e-x),
   have lim1 : (λ (x:E), M) →_{x} M := tendsto_const_nhds,

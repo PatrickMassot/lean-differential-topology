@@ -14,6 +14,32 @@ noncomputable theory
 
 local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
 
+lemma tendsto_iff_distance_tendsto_zero { X Y : Type*} [metric_space X] [metric_space Y]
+{f : X → Y} {x : X} {y : Y}: (f →_{x} y) ↔ ((λ x', dist (f x') y) →_{x} 0) :=
+begin
+split,
+{ intro lim,
+  have := tendsto_dist lim tendsto_const_nhds, swap, exact y,
+  finish[this] },
+{ intro lim_dist,
+  apply  tendsto_nhds_of_metric.2,
+  have lim_dist' := tendsto_nhds_of_metric.1 lim_dist,
+  have tauto : ∀ (x : X) (y : Y), dist (dist (f x) y) 0 = dist (f x) y, 
+    assume x y, calc dist (dist (f x) y) 0 = abs ((dist (f x) y) - 0) : rfl
+    ... = abs (dist (f x) y) : by simp
+    ... = dist (f x) y : abs_of_nonneg dist_nonneg,
+ 
+  -- starting from here I would like to say rw[tauto] but I can't
+  intros ε ε_pos,
+  rcases (lim_dist' ε ε_pos) with ⟨δ, δ_pos, prop⟩,
+  existsi [δ, δ_pos],
+  intros x_1 dist_x_1,
+  have :=  prop dist_x_1,
+  rw tauto at this,
+  exact this }
+end
+
+
 class normed_group (α : Type*) extends add_comm_group α, metric_space α :=
 (norm : α → ℝ)
 (dist_eq : ∀ x y, dist x y = norm (x - y))
@@ -34,11 +60,10 @@ lemma norm_dist { g : G} : dist g 0 = ∥g∥ :=
 by { rw[norm_dist'], simp }
 
 lemma norm_triangle (g h : G) : ∥g + h∥ ≤ ∥g∥ + ∥h∥ :=
-calc 
-∥g + h∥ = ∥g - (-h)∥             : by simp
-   ... = dist g (-h)            : by simp[norm_dist']
-   ... ≤ dist g 0 + dist 0 (-h) : by apply dist_triangle
-   ... = ∥g∥ + ∥h∥               : by simp[norm_dist']
+calc ∥g + h∥ = ∥g - (-h)∥             : by simp
+         ... = dist g (-h)            : by simp[norm_dist']
+         ... ≤ dist g 0 + dist 0 (-h) : by apply dist_triangle
+         ... = ∥g∥ + ∥h∥               : by simp[norm_dist']
 
 @[simp]
 lemma norm_nonneg {g : G} : 0 ≤ ∥g∥ :=
@@ -53,9 +78,9 @@ norm_zero_iff_zero.2 (by simp)
 
 lemma norm_pos_iff {g : G} : ∥ g ∥  > 0 ↔ g ≠ 0 :=
 begin
-split ; intro h ; rw[←norm_dist] at *,
-{ exact dist_pos.1 h },
-{ exact dist_pos.2 h }
+  split ; intro h ; rw[←norm_dist] at *,
+  { exact dist_pos.1 h },
+  { exact dist_pos.2 h }
 end
 
 lemma norm_le_zero_iff {g : G} : ∥g∥ ≤ 0 ↔ g = 0 :=
@@ -64,12 +89,11 @@ by { rw[←norm_dist], exact dist_le_zero }
 
 @[simp]
 lemma norm_neg {g : G} : ∥-g∥ = ∥g∥ :=
-begin
-  rw[show ∥g∥ = ∥g-0∥, by simp],
-  rw[show ∥-g∥ = ∥0-g∥, by simp],
-  repeat {rw[←norm_dist']},
-  exact dist_comm 0 g
-end
+calc ∥-g∥ = ∥0 - g∥ : by simp
+      ... = dist 0 g : norm_dist'.symm
+      ... = dist g 0 : dist_comm _ _
+      ... = ∥g - 0∥ : norm_dist'
+      ... = ∥g∥ : by simp
 
 lemma norm_triangle' (g h : G) : abs(∥g∥ - ∥h∥) ≤ ∥g - h∥ := 
 begin
@@ -98,55 +122,39 @@ begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[
 lemma norm_proj2_le (x : G × H) : ∥x.2∥ ≤ ∥x∥ :=
 begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[le_max_right], end
 
-lemma tendsto_iff_distance_tendsto_zero { X Y : Type*} [metric_space X] [metric_space Y]
-{f : X → Y} {x : X} {y : Y}: (f →_{x} y) ↔ ((λ x', dist (f x') y) →_{x} 0) :=
-begin
-split,
-{ intro lim,
-  have := tendsto_dist lim tendsto_const_nhds, swap, exact y,
-  finish[this] },
-{ intro lim_dist,
-  apply  tendsto_nhds_of_metric.2,
-  have lim_dist' := tendsto_nhds_of_metric.1 lim_dist,
-  have tauto : ∀ (x : X) (y : Y), dist (dist (f x) y) 0 = dist (f x) y, 
-    assume x y, calc dist (dist (f x) y) 0 = abs ((dist (f x) y) - 0) : rfl
-    ... = abs (dist (f x) y) : by simp
-    ... = dist (f x) y : abs_of_nonneg dist_nonneg,
 
-  -- starting from here I would like to say rw[tauto] but I can't
-  intros ε ε_pos,
-  rcases (lim_dist' ε ε_pos) with ⟨δ, δ_pos, prop⟩,
-  existsi [δ, δ_pos],
-  intros x_1 dist_x_1,
-  have :=  prop dist_x_1,
-  rw tauto at this,
-  exact this }
-end
-
-lemma tendsto_iff_norm_tendsto_zero (f : G → H) (a : G) (b : H) : (f →_{a} b) ↔ ((λ e, ∥ f e - b ∥) →_{a} 0) :=
+lemma tendsto_iff_norm_tendsto_zero {f : G → H} {a : G} {b : H} : (f →_{a} b) ↔ ((λ e, ∥ f e - b ∥) →_{a} 0) :=
 begin
-simp only [norm_dist'.symm],
-exact tendsto_iff_distance_tendsto_zero
+  simp only [norm_dist'.symm],
+  exact tendsto_iff_distance_tendsto_zero
 end
 
 
 lemma lim_norm (x: G) : ((λ g, ∥g-x∥) : G → ℝ) →_{x} 0 :=
 begin
-apply (tendsto_iff_norm_tendsto_zero _ _ _).1, 
-apply continuous_iff_tendsto.1,
-simp[show (λ e : G , e) = id, from rfl, continuous_id]
+  apply tendsto_iff_norm_tendsto_zero.1, 
+  apply continuous_iff_tendsto.1,
+  simp[show (λ e : G , e) = id, from rfl, continuous_id]
 end
 
 lemma lim_norm_zero  : ((λ g, ∥g∥) : G → ℝ) →_{0} 0 :=
 by simpa using lim_norm (0:G)
+
+lemma norm_continuous {G : Type*} [normed_group G]: continuous ((λ g, ∥g∥) : G → ℝ) := 
+begin
+  apply continuous_iff_tendsto.2,
+  intro x,
+  apply tendsto_iff_distance_tendsto_zero.2,
+  exact squeeze_zero (λ g, abs(∥g∥ - ∥x∥)) _ x (λ t, abs_nonneg _) (λ t, norm_triangle' _ _) (lim_norm x),
+end
 
 
 instance normed_top_monoid  : topological_add_monoid G  := 
 ⟨begin 
   apply continuous_iff_tendsto.2 _,
   intro x,
-  have := (tendsto_iff_norm_tendsto_zero (λ (p : G × G), p.fst + p.snd) x (x.1 + x.2)).2,
-  apply this, clear this,
+  apply tendsto_iff_norm_tendsto_zero.2,
+  
   simp,
   have ineq := λ e: G × G, calc
   ∥e.fst + (e.snd + (-x.fst + -x.snd))∥ = ∥(e.fst-x.fst) + (e.snd - x.snd)∥ : by simp
@@ -169,22 +177,22 @@ end⟩
 
 instance normed_top_group  : topological_add_group G  := 
 { continuous_neg := begin
-  apply continuous_iff_tendsto.2,
-  intro x,
-  apply (tendsto_iff_norm_tendsto_zero _ _ _).2,
-  simp,
-  have neg := λ (e : G), calc
-  ∥ x + -e∥ = ∥ -(e -x)∥ : by simp
-  ... =  ∥e - x∥ : norm_neg,
-  conv in _ {rw [neg]},
+    apply continuous_iff_tendsto.2,
+    intro x,
+    apply tendsto_iff_norm_tendsto_zero.2,
+    simp,
+    have neg := λ (e : G), calc
+    ∥ x + -e∥ = ∥ -(e -x)∥ : by simp
+    ... =  ∥e - x∥ : norm_neg,
+    conv in _ {rw [neg]},
 
-  have lim_negx : (λ (e : G), -x )→_{x} -x:= tendsto_const_nhds,
-  have lim_e : (λ (e : G), e )→_{x} x := continuous_iff_tendsto.1 continuous_id x,
-  have := tendsto_add lim_negx lim_e,
-  simp at this,
-  simpa using filter.tendsto.comp this lim_norm_zero
-end,
-..normed_top_monoid }
+    have lim_negx : (λ (e : G), -x )→_{x} -x:= tendsto_const_nhds,
+    have lim_e : (λ (e : G), e )→_{x} x := continuous_iff_tendsto.1 continuous_id x,
+    have := tendsto_add lim_negx lim_e,
+    simp at this,
+    simpa using filter.tendsto.comp this lim_norm_zero
+  end,
+  ..normed_top_monoid }
 
 end normed_group
 
@@ -238,25 +246,6 @@ instance : normed_field ℝ :=
   dist_eq := assume x y, rfl,
   norm_mul := abs_mul}
 
--- TODO Clean following proof
-/- This proof comes late because it uses that ℝ is a normed group, 
-   through tendsto_iff_norm_tendsto_zero.
-   Maybe we should rather have a version of tendsto_iff_norm_tendsto_zero 
-   in ℝ without using the norm stuff -/
-lemma norm_continuous {G : Type*} [normed_group G]: continuous ((λ g, ∥g∥) : G → ℝ) := 
-begin
-apply continuous_iff_tendsto.2,
-intro x,
-have ineq := ∀ g : G, abs(∥g∥ - ∥x∥) ≤ ∥ g -x∥,
-have lim := squeeze_zero (λ g, abs(∥g∥ - ∥x∥)) _ x _ _ (lim_norm x),
-  swap,
-  intro t,
-  exact abs_nonneg _,
-  swap,
-  intro t, simp, exact norm_triangle' t x,
-exact (tendsto_iff_norm_tendsto_zero (λ g : G, ∥g∥) _ _).2 lim
-end
-
 
 class normed_space (α : out_param $ Type*) (β : Type*) [out_param $ normed_field α] extends vector_space α β, metric_space β :=
 (norm : β → ℝ)
@@ -281,7 +270,7 @@ lemma tendsto_smul {f : E → k} { g : E → F} {e : E} {s : k} {b : F} :
 (f →_{e} s) → (g →_{e} b) → ((λ e, (f e) • (g e)) →_{e} s • b) := 
 begin
   intros limf limg,
-  apply (tendsto_iff_norm_tendsto_zero _ _ _).2,
+  apply tendsto_iff_norm_tendsto_zero.2,
   have ineq : ∀ x : E, _ := begin 
     intro x, exact calc 
       ∥f x • g x - s • b∥ = ∥(f x • g x - s • g x) + (s • g x - s • b)∥ : by simp[add_assoc]
@@ -292,12 +281,12 @@ begin
   { intro t, exact norm_nonneg },
   { exact ineq },
   { clear ineq,
-    have limf': (λ (x : E), ∥f x - s∥)→_{e}0 := (tendsto_iff_norm_tendsto_zero _ _ _).1 limf,
+    have limf': (λ (x : E), ∥f x - s∥)→_{e}0 := tendsto_iff_norm_tendsto_zero.1 limf,
     have limg' := tendsto.comp limg (continuous_iff_tendsto.1 norm_continuous _),
     have limg'' : (λ (x : E), ∥g x∥)→_{e} ∥b∥, simp[limg'], clear limg',
     
     have lim1  := tendsto_mul limf' limg'', simp at lim1,
-    have limg3 := (tendsto_iff_norm_tendsto_zero _ _ _).1 limg,
+    have limg3 := tendsto_iff_norm_tendsto_zero.1 limg,
     have lim2  := tendsto_mul tendsto_const_nhds limg3, swap, exact ∥s∥,
     simp at lim2,
     
