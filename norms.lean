@@ -8,6 +8,7 @@ import data.prod
 import tactic.norm_num
 
 import squeeze
+import max_lemmas
 
 noncomputable theory
 
@@ -212,33 +213,13 @@ instance prod.ring [ring α] [ring β] : ring (α × β) :=
   ..prod.monoid,
   ..prod.add_comm_group}
 
--- a tribute to  abs_abs_sub_abs_le_abs_sub from core algebra.functions
-lemma max_prod_prod_le_max_prod_max {α : Type*} [decidable_linear_ordered_comm_ring α] {a b c d  : α} 
-(ha : 0 ≤ a) (hb : 0 ≤ b) (hd: 0 ≤ d) : max (a*b) (c*d) ≤ (max a c) * (max b d) :=
-begin
-  have hac : 0 ≤ max a c := le_trans ha (le_max_left a c),
-  have A := le_max_left a c,
-  have B := le_max_left b d,
-  have AC := mul_le_mul A B hb hac,
-  
-  have C := le_max_right a c,
-  have D := le_max_right b d,
-  have CD := mul_le_mul C D hd hac,
-
-  exact (max_le AC CD),
-end
-
-lemma max_le_max {α : Type*} [decidable_linear_ordered_comm_ring α] {a b c d  : α} 
-(h1 : a ≤ b) (h2 : c ≤ d) : max a c ≤ max b d := 
-max_le (le_trans h1 (le_max_left b d)) (le_trans h2 (le_max_right b d))
-
 instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α × β) :=
 { norm_mul := assume x y, 
   calc
     ∥x * y∥ = ∥(x.1*y.1, x.2*y.2)∥ : rfl 
         ... = (max ∥x.1*y.1∥  ∥x.2*y.2∥) : rfl
         ... ≤ (max (∥x.1∥*∥y.1∥) (∥x.2∥*∥y.2∥)) : max_le_max (norm_mul (x.1) (y.1)) (norm_mul (x.2) (y.2))                                                   
-        ... ≤ (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by { apply max_prod_prod_le_max_prod_max _ _ _; simp }
+        ... ≤ (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by { apply max_mul_le_mul_max _ _ _; simp }
         ... = (∥x∥*∥y∥) : rfl,
   ..prod.ring,
   ..prod.normed_group }
@@ -256,12 +237,6 @@ instance : normed_field ℝ :=
 { norm := λ x, abs x, 
   dist_eq := assume x y, rfl,
   norm_mul := abs_mul}
-
-/- The above instance has a huge issue:
-   @normed_field.to_metric_space.{0} real real.normed_field
-   is not defeq real.metric_space 
-   See how this obstruct proving tendsto_smul
--/
 
 -- TODO Clean following proof
 /- This proof comes late because it uses that ℝ is a normed group, 
@@ -330,28 +305,6 @@ begin
     rw [show (0:ℝ) + 0 = 0, from by simp] at this,
     exact this }
 end
-
-lemma max_monotone_fun {α : Type*} [decidable_linear_order α] {β : Type*} [decidable_linear_order β] 
-{f : α → β} (H : monotone f) (a a' : α)  :  max (f a) (f a') =  f(max a a') :=
-begin
-by_cases a ≤ a',
-{ have fa_le_fa' := H h,
-  rw max_comm,
-  rw max_eq_left fa_le_fa',
-  have T :=  max_eq_left h,
-  rw max_comm at T,
-  rw T },
-{ have h' : a' ≤ a := le_of_not_ge h,
-  rw max_eq_left (H h'),
-  rw  max_eq_left h' }
-end
-
-lemma monotone_mul_nonneg (a : ℝ) : 0 ≤ a → monotone (λ x, a*x) :=
-assume a_non_neg b c b_le_c, mul_le_mul_of_nonneg_left b_le_c a_non_neg
-
-lemma max_mul_nonneg (a b c : ℝ) : 0 ≤ a → max (a*b) (a*c) = a*(max b c) :=
-assume a_nonneg, max_monotone_fun (monotone_mul_nonneg a a_nonneg) b c
-
 
 
 instance product_normed_space : normed_space k (E × F) := 
