@@ -21,70 +21,17 @@ lemma real_refl {a:ℝ} : a ≤ a := le_refl _
 
 open filter
 
-lemma le_of_patrick_hyp {a b c d : ℝ} : 0 ≤ d → a ≤ b → c > 0→ a/c*d ≤ b/c*d :=
+lemma le_of_patrick_hyp {a b c d : ℝ} : 0 ≤ d → a ≤ b → c > 0 → a/c*d ≤ b/c*d :=
 begin
 intros d_nonneg a_le_b c_pos,
-suffices : a/c ≤ b/c,
-apply mul_le_mul_of_nonneg_right this d_nonneg,
-apply div_le_of_le_mul c_pos _,
-rw [←mul_div_assoc],
-rw[mul_comm],
-rw [mul_div_cancel],
-assumption,
-exact ne_of_gt c_pos,
+suffices : a/c ≤ b/c, from mul_le_mul_of_nonneg_right this d_nonneg,
+apply div_le_of_le_mul c_pos,
+simpa [(mul_div_assoc _ _ _).symm, mul_comm, mul_div_cancel _ (ne_of_gt c_pos)]
 end
 
 @[simp]
 lemma norm_norm { e : E } : ∥∥e∥∥ = ∥e∥ := 
 abs_of_nonneg norm_nonneg
-
-lemma ineq_prelim (L : E → F) (P : F → G) (ε : E → F) (η : F → G) (MP ML : ℝ) (h : E) 
-(MP_pos : MP > 0)
-(ineq_P : ∀ (x : F), ∥P x∥ ≤ MP * ∥x∥)
-(ML_pos : ML > 0)
-(ineq_L : ∀ (x : E), ∥L x∥ ≤ ML * ∥x∥)
-(H : h ≠ 0) :
-∥ P (ε h) + (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h) ∥  ≤ 
-MP * ∥ε h∥ + (ML + ∥ε h∥) * ∥η (L h + ∥h∥ • ε h)∥  :=
-begin
-  
-  have norm_h_pos : ∥h∥ > 0 := norm_pos_iff.2 H,
-  have norm_h_non_zero : ∥h∥ ≠ 0 := ne_of_gt norm_h_pos,
-  
-  have prelim : (∥L h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ ≤
-          (ML * ∥h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ := 
-  begin
-    apply le_of_patrick_hyp,
-    { exact norm_nonneg },
-    { specialize ineq_L h,
-      apply add_le_add_right ineq_L},
-    { exact norm_h_pos },
-  end,
-  
-  have prelim2 : ∥∥L h + ∥h∥ • ε h∥ / ∥h∥∥ = ∥L h + ∥h∥ • ε h∥ / ∥h∥ := 
-  begin 
-    apply abs_of_nonneg,
-    apply div_nonneg_of_nonneg_of_pos norm_nonneg norm_h_pos
-  end,
-
-  have prelim3 : ∥L h + ∥h∥ • ε h∥/∥h∥*∥η (L h + ∥h∥ • ε h)∥ ≤ (∥L h∥ + ∥∥h∥ • ε h∥)/∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ :=
-  begin
-  apply le_of_patrick_hyp,
-  { apply norm_nonneg },
-  { apply norm_triangle },
-  { apply norm_h_pos }
-  end,
-
-  exact calc 
-  ∥P (ε h) + (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ ≤ ∥P (ε h)∥  +  ∥ (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ : by { simp[norm_triangle] }
-  ... ≤ MP*∥ε h∥ + ∥ (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ : by { simp[ineq_P] }
-  ... ≤ MP*∥ε h∥ + (∥L h + ∥h∥ • ε h∥ / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { simp[norm_smul], rw[prelim2] }
-  ... ≤ MP*∥ε h∥ + ((∥L h∥ + ∥ ∥h∥ • ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { simp[norm_triangle], exact prelim3 }
-  ... ≤ MP*∥ε h∥ + ((∥L h∥ +  ∥h∥ *∥ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { simp[norm_smul (∥h∥) (ε h)]}
-  ... ≤ MP*∥ε h∥ + ((ML*∥h∥ +  ∥h∥ *∥ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by {simp[prelim] }
-  ... ≤ MP*∥ε h∥ + (ML +  ∥ε h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by { rw add_div, simp[norm_h_pos, div_self], apply mul_le_mul_of_nonneg_right _ norm_nonneg, rw[mul_div_cancel _ norm_h_non_zero], rw[mul_comm], rw[mul_div_cancel _ norm_h_non_zero] }
-end
-
 
 theorem chain_rule (f : E → F) (g : F → G) (a : E) (L : E → F) (P : F → G)
 (D : is_differential f a L) (D' : is_differential g (f a) P) : is_differential (g ∘ f) a (P ∘ L) :=
@@ -144,8 +91,24 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
         simp [δ],
         simp [H],
 
-        apply ineq_prelim,
-        repeat {assumption} },
+        have norm_h_pos : ∥h∥ > 0 := norm_pos_iff.2 H,
+        have norm_h_non_zero : ∥h∥ ≠ 0 := ne_of_gt norm_h_pos,
+        have prelim1 : ∥∥L h + ∥h∥ • ε h∥ / ∥h∥∥ = ∥L h + ∥h∥ • ε h∥ / ∥h∥ := 
+          abs_of_nonneg (div_nonneg_of_nonneg_of_pos norm_nonneg norm_h_pos),
+        have prelim2 : ∥L h + ∥h∥ • ε h∥/∥h∥*∥η (L h + ∥h∥ • ε h)∥ ≤ (∥L h∥ + ∥∥h∥ • ε h∥)/∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ :=
+          le_of_patrick_hyp norm_nonneg (norm_triangle _ _) norm_h_pos,
+        have prelim3 : (∥L h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ ≤
+                (ML * ∥h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ := 
+          le_of_patrick_hyp norm_nonneg (add_le_add_right (ineq_L h) _) norm_h_pos,
+
+        exact calc 
+        ∥P (ε h) + (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ 
+            ≤ ∥P (ε h)∥  +  ∥ (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ : by simp[norm_triangle] 
+        ... ≤ MP*∥ε h∥ + (∥L h + ∥h∥ • ε h∥ / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by simp[norm_triangle, ineq_P, norm_smul, prelim1] 
+        ... ≤ MP*∥ε h∥ + ((∥L h∥ + ∥ ∥h∥ • ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by simp[norm_triangle, prelim2]
+        ... ≤ MP*∥ε h∥ + ((ML*∥h∥ +  ∥h∥ *∥ε h∥) / ∥h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by simp[norm_smul, prelim3]
+        ... = MP*∥ε h∥ + (ML +  ∥ε h∥)*∥h∥ / ∥h∥ * ∥ η (L h + ∥h∥ • ε h)∥ : by simp[mul_comm, add_mul]
+        ... = MP*∥ε h∥ + (ML +  ∥ε h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by simp[mul_div_cancel _ norm_h_non_zero] },
     }, -- end of bound_δ proof
     
      
