@@ -8,37 +8,11 @@ import data.prod
 import tactic.norm_num
 
 import squeeze
-import max_lemmas
+
 
 noncomputable theory
 
 local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
-
-lemma tendsto_iff_distance_tendsto_zero { X Y : Type*} [metric_space X] [metric_space Y]
-{f : X → Y} {x : X} {y : Y}: (f →_{x} y) ↔ ((λ x', dist (f x') y) →_{x} 0) :=
-begin
-split,
-{ intro lim,
-  have := tendsto_dist lim tendsto_const_nhds, swap, exact y,
-  finish[this] },
-{ intro lim_dist,
-  apply  tendsto_nhds_of_metric.2,
-  have lim_dist' := tendsto_nhds_of_metric.1 lim_dist,
-  have tauto : ∀ (x : X) (y : Y), dist (dist (f x) y) 0 = dist (f x) y, 
-    assume x y, calc dist (dist (f x) y) 0 = abs ((dist (f x) y) - 0) : rfl
-    ... = abs (dist (f x) y) : by simp
-    ... = dist (f x) y : abs_of_nonneg dist_nonneg,
- 
-  -- starting from here I would like to say rw[tauto] but I can't
-  intros ε ε_pos,
-  rcases (lim_dist' ε ε_pos) with ⟨δ, δ_pos, prop⟩,
-  existsi [δ, δ_pos],
-  intros x_1 dist_x_1,
-  have :=  prop dist_x_1,
-  rw tauto at this,
-  exact this }
-end
-
 
 class normed_group (α : Type*) extends add_comm_group α, metric_space α :=
 (norm : α → ℝ)
@@ -126,7 +100,7 @@ begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[
 lemma tendsto_iff_norm_tendsto_zero {f : G → H} {a : G} {b : H} : (f →_{a} b) ↔ ((λ e, ∥ f e - b ∥) →_{a} 0) :=
 begin
   simp only [norm_dist'.symm],
-  exact tendsto_iff_distance_tendsto_zero
+  exact tendsto_iff_dist_tendsto_zero
 end
 
 
@@ -144,8 +118,9 @@ lemma norm_continuous {G : Type*} [normed_group G]: continuous ((λ g, ∥g∥) 
 begin
   apply continuous_iff_tendsto.2,
   intro x,
-  apply tendsto_iff_distance_tendsto_zero.2,
-  exact squeeze_zero (λ g, abs(∥g∥ - ∥x∥)) _ x (λ t, abs_nonneg _) (λ t, norm_triangle' _ _) (lim_norm x),
+  have : (λ (g : G), dist ∥g∥ ∥x∥) →_{x} 0 := 
+    squeeze_zero (λ g, dist ∥g∥ ∥x∥) _ x (λ t, abs_nonneg _) (λ t, norm_triangle' _ _) (lim_norm x),
+  exact tendsto_iff_dist_tendsto_zero.2 this
 end
 
 
@@ -227,8 +202,10 @@ instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α ×
   calc
     ∥x * y∥ = ∥(x.1*y.1, x.2*y.2)∥ : rfl 
         ... = (max ∥x.1*y.1∥  ∥x.2*y.2∥) : rfl
-        ... ≤ (max (∥x.1∥*∥y.1∥) (∥x.2∥*∥y.2∥)) : max_le_max (norm_mul (x.1) (y.1)) (norm_mul (x.2) (y.2))                                                   
-        ... ≤ (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by { apply max_mul_le_mul_max _ _ _; simp }
+        ... ≤ (max (∥x.1∥*∥y.1∥) (∥x.2∥*∥y.2∥)) : max_le_max (norm_mul (x.1) (y.1)) (norm_mul (x.2) (y.2))
+        ... = (max (∥x.1∥*∥y.1∥) (∥y.2∥*∥x.2∥)) : by simp[mul_comm]
+        ... ≤ (max (∥x.1∥) (∥x.2∥)) * (max (∥y.2∥) (∥y.1∥)) : by { apply max_mul_mul_le_max_mul_max; simp [norm_nonneg] }
+        ... = (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by simp[max_comm]
         ... = (∥x∥*∥y∥) : rfl,
   ..prod.ring,
   ..prod.normed_group }
@@ -317,7 +294,7 @@ instance product_normed_space : normed_space α (E × F) :=
       ∥s • (x₁, x₂)∥ = ∥ (s • x₁, s• x₂)∥ : rfl
       ... = max (∥s • x₁∥) (∥ s• x₂∥) : rfl
       ... = max (∥s∥ * ∥x₁∥) (∥s∥ * ∥x₂∥) : by simp[norm_smul s x₁, norm_smul s x₂]
-      ... = ∥s∥ * max (∥x₁∥) (∥x₂∥) : by simp[max_mul_nonneg]
+      ... = ∥s∥ * max (∥x₁∥) (∥x₂∥) : by simp[mul_max_of_nonneg]
   end,
   
   add_smul := by simp[add_smul], 

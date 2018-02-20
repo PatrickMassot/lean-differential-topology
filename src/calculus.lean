@@ -15,19 +15,10 @@ variables {E : Type*} {F : Type*} {G : Type*} [normed_space ℝ E] [normed_space
 def is_differential  (f : E → F) (a : E) (L : E → F) : Prop :=
 (is_bounded_linear_map L) ∧ (∃ ε : E → F, (∀ h, f (a + h) =  f a + L h + ∥h∥ • ε h) ∧  (ε →_{0} 0))
 
-@[refl]
-lemma real_refl {a:ℝ} : a ≤ a := le_refl _
-
-
 open filter
 
-lemma le_of_patrick_hyp {a b c d : ℝ} : 0 ≤ d → a ≤ b → c > 0 → a/c*d ≤ b/c*d :=
-begin
-intros d_nonneg a_le_b c_pos,
-suffices : a/c ≤ b/c, from mul_le_mul_of_nonneg_right this d_nonneg,
-apply div_le_of_le_mul c_pos,
-simpa [(mul_div_assoc _ _ _).symm, mul_comm, mul_div_cancel _ (ne_of_gt c_pos)]
-end
+lemma div_mul_le_div_mul_left {a b c d : ℝ} : 0 ≤ d → a ≤ b → c > 0 → a/c*d ≤ b/c*d :=
+assume d0 ab c0, mul_le_mul_of_nonneg_right (div_le_div_of_le_of_pos ab c0) d0
 
 @[simp]
 lemma norm_norm { e : E } : ∥∥e∥∥ = ∥e∥ := 
@@ -39,7 +30,7 @@ begin
 rcases D with ⟨cont_lin_L, ε, TEf, lim_ε⟩,
 rcases D' with ⟨cont_lin_P, η, TEg, lim_η⟩,
 unfold is_differential,
-have cont_linPL := comp_continuous_linear_map L P cont_lin_L cont_lin_P,
+have cont_linPL := is_bounded_linear_map.comp cont_lin_L cont_lin_P,
 split,
 { exact cont_linPL },
 let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥/∥h∥)• η (L h + ∥h∥•ε h),
@@ -71,7 +62,9 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
       exact mt norm_zero_iff_zero.1 H },
   }, 
   { -- prove δ →_0 0
-    apply tendsto_iff_norm_tendsto_zero.2,
+    have norm_reformulation:= (@tendsto_iff_norm_tendsto_zero _ _ _ _ δ 0 0).2,
+    simp at norm_reformulation,
+    apply norm_reformulation, clear norm_reformulation,
     
     have bound_δ : ∀ h :E, ∥ δ h ∥ ≤ MP*∥ε h∥ + ( ML + ∥ε h ∥)*∥ η (L h + ∥h∥•ε h)∥,
     { intro h,
@@ -94,10 +87,10 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
         have prelim1 : ∥∥L h + ∥h∥ • ε h∥ / ∥h∥∥ = ∥L h + ∥h∥ • ε h∥ / ∥h∥ := 
           abs_of_nonneg (div_nonneg_of_nonneg_of_pos norm_nonneg norm_h_pos),
         have prelim2 : ∥L h + ∥h∥ • ε h∥/∥h∥*∥η (L h + ∥h∥ • ε h)∥ ≤ (∥L h∥ + ∥∥h∥ • ε h∥)/∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ :=
-          le_of_patrick_hyp norm_nonneg (norm_triangle _ _) norm_h_pos,
+          div_mul_le_div_mul_left norm_nonneg (norm_triangle _ _) norm_h_pos,
         have prelim3 : (∥L h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ ≤
                 (ML * ∥h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ := 
-          le_of_patrick_hyp norm_nonneg (add_le_add_right (ineq_L h) _) norm_h_pos,
+          div_mul_le_div_mul_left norm_nonneg (add_le_add_right (ineq_L h) _) norm_h_pos,
 
         exact calc 
         ∥P (ε h) + (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ 
@@ -112,7 +105,7 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
      
     have norm_δ_nonneg : ∀ (t : E), (0:ℝ) ≤ (λ (h : E), ∥δ h∥) t :=
     assume t, norm_nonneg,
-    simp,
+    
     apply squeeze_zero (λ h, ∥ δ h∥) (λ h, MP*∥ε h∥ + ( ML + ∥ε h ∥)*∥ η (L h + ∥h∥•ε h)∥) 0 norm_δ_nonneg bound_δ,
     clear norm_δ_nonneg bound_δ, 
 
