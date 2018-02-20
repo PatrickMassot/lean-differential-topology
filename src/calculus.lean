@@ -71,9 +71,7 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
       exact mt norm_zero_iff_zero.1 H },
   }, 
   { -- prove δ →_0 0
-    have norm_reformulation:= (tendsto_iff_norm_tendsto_zero δ 0 0).2,
-    simp at norm_reformulation,
-    apply norm_reformulation, clear norm_reformulation,
+    apply tendsto_iff_norm_tendsto_zero.2,
     
     have bound_δ : ∀ h :E, ∥ δ h ∥ ≤ MP*∥ε h∥ + ( ML + ∥ε h ∥)*∥ η (L h + ∥h∥•ε h)∥,
     { intro h,
@@ -114,7 +112,7 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
      
     have norm_δ_nonneg : ∀ (t : E), (0:ℝ) ≤ (λ (h : E), ∥δ h∥) t :=
     assume t, norm_nonneg,
-    
+    simp,
     apply squeeze_zero (λ h, ∥ δ h∥) (λ h, MP*∥ε h∥ + ( ML + ∥ε h ∥)*∥ η (L h + ∥h∥•ε h)∥) 0 norm_δ_nonneg bound_δ,
     clear norm_δ_nonneg bound_δ, 
 
@@ -131,7 +129,7 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
       
       simp[lim_ML_norm] at this,
       rename this lim_norm_L,
-      have lim_L := (tendsto_iff_norm_tendsto_zero L 0 0).2,
+      have lim_L := (@tendsto_iff_norm_tendsto_zero _ _ _ _ L 0 0).2,
       simp at lim_L,
       specialize lim_L lim_norm_L,
       
@@ -140,14 +138,14 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
     
     have lim2 := tendsto.comp lim1 lim_η, clear lim1,
 
-    have norm_reformulation := (tendsto_iff_norm_tendsto_zero (λ (h: E),  η (L h + ∥h∥ • ε h)) 0 0 ).1,
+    have norm_reformulation := (@tendsto_iff_norm_tendsto_zero _ _ _ _ (λ (h: E),  η (L h + ∥h∥ • ε h)) 0 0 ).1,
     simp at norm_reformulation,
     
     have lim3 : ((λ (h: E),  ∥ η (L h + ∥h∥ • ε h)∥) →_{0} (0)) :=
     norm_reformulation lim2, clear norm_reformulation, clear lim2,
     
     have lim_norm_ε : (λ (e : E), ∥ε e∥)→_{0}0 := 
-    by simpa using (tendsto_iff_norm_tendsto_zero ε 0 0 ).1 lim_ε,
+    by simpa using (@tendsto_iff_norm_tendsto_zero _ _ _ _ ε 0 0 ).1 lim_ε,
     have lim4 : (λ (x : E),  ML + ∥ε x∥)→_{0} ML := 
     by simpa using tendsto_add limML lim_norm_ε,
     
