@@ -62,9 +62,7 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
       exact mt norm_zero_iff_zero.1 H },
   }, 
   { -- prove δ →_0 0
-    have norm_reformulation:= (@tendsto_iff_norm_tendsto_zero _ _ _ _ δ 0 0).2,
-    simp at norm_reformulation,
-    apply norm_reformulation, clear norm_reformulation,
+    apply tendsto_iff_norm_tendsto_zero.2,
     
     have bound_δ : ∀ h :E, ∥ δ h ∥ ≤ MP*∥ε h∥ + ( ML + ∥ε h ∥)*∥ η (L h + ∥h∥•ε h)∥,
     { intro h,
@@ -105,7 +103,7 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
      
     have norm_δ_nonneg : ∀ (t : E), (0:ℝ) ≤ (λ (h : E), ∥δ h∥) t :=
     assume t, norm_nonneg,
-    
+    simp,
     apply squeeze_zero (λ h, ∥ δ h∥) (λ h, MP*∥ε h∥ + ( ML + ∥ε h ∥)*∥ η (L h + ∥h∥•ε h)∥) 0 norm_δ_nonneg bound_δ,
     clear norm_δ_nonneg bound_δ, 
 
