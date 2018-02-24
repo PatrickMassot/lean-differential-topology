@@ -6,7 +6,10 @@ import continuous_linear_maps
 noncomputable theory
 local attribute [instance] classical.prop_decidable
 
+open filter is_bounded_linear_map
+
 local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
+local notation `lim_{`:50 a`}`:0 f := lim (map f (nhds a))
 local notation `∥` e `∥` := norm e
 
 section differential
@@ -15,7 +18,6 @@ variables {E : Type*} {F : Type*} {G : Type*} [normed_space ℝ E] [normed_space
 def is_differential  (f : E → F) (a : E) (L : E → F) : Prop :=
 (is_bounded_linear_map L) ∧ (∃ ε : E → F, (∀ h, f (a + h) =  f a + L h + ∥h∥ • ε h) ∧  (ε →_{0} 0))
 
-open filter
 
 lemma div_mul_le_div_mul_left {a b c d : ℝ} : 0 ≤ d → a ≤ b → c > 0 → a/c*d ≤ b/c*d :=
 assume d0 ab c0, mul_le_mul_of_nonneg_right (div_le_div_of_le_of_pos ab c0) d0
@@ -33,11 +35,15 @@ unfold is_differential,
 have cont_linPL := is_bounded_linear_map.comp cont_lin_L cont_lin_P,
 split,
 { exact cont_linPL },
-let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥/∥h∥)• η (L h + ∥h∥•ε h),
-
-{existsi δ,
-{ split; rcases cont_lin_P with ⟨lin_P , MP, MP_pos, ineq_P⟩; rcases cont_lin_L with ⟨lin_L , ML, ML_pos, ineq_L⟩,
-  { intro h,
+{ rcases cont_lin_P with ⟨lin_P , MP, MP_pos, ineq_P⟩,
+  rcases cont_lin_L with ⟨lin_L , ML, ML_pos, ineq_L⟩,
+  
+  let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥/∥h∥)• η (L h + ∥h∥•ε h),
+  existsi δ,
+  
+  split, 
+  { -- prove (g ∘ f) (a + h) = (g ∘ f) a + (P ∘ L) h + ∥h∥ • δ h
+    intro h,
     by_cases H : h = 0,
     { -- h = 0 case
       simp [H, cont_linPL.1.zero] },
@@ -63,19 +69,20 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
   }, 
   { -- prove δ →_0 0
     apply tendsto_iff_norm_tendsto_zero.2,
-    
+    simp,
     have bound_δ : ∀ h :E, ∥ δ h ∥ ≤ MP*∥ε h∥ + ( ML + ∥ε h ∥)*∥ η (L h + ∥h∥•ε h)∥,
     { intro h,
       by_cases H : h = 0,
-       { -- h = 0 case
-       simp [H, δ],
-       simp,
+      { -- h = 0 case
        
-       have h1 : 0 ≤ MP * ∥ε 0∥ := mul_nonneg (le_of_lt MP_pos) norm_nonneg,
-       have h2 : 0 ≤ ML + ∥ε 0∥ := add_nonneg' (le_of_lt ML_pos) norm_nonneg,
-       have h3 : 0 ≤ (ML + ∥ε 0∥) * ∥η (L 0)∥ := mul_nonneg h2 norm_nonneg,
-             
-       exact add_nonneg' h1 h3 },
+        simp [δ],
+        simp [H],
+        apply add_nonneg'; apply mul_nonneg,
+
+        exact le_of_lt MP_pos,
+        exact norm_nonneg,
+        exact add_nonneg' (le_of_lt ML_pos) norm_nonneg,
+        exact norm_nonneg },
       { -- h ≠ 0 case
         simp [δ],
         simp [H],
@@ -100,58 +107,25 @@ let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥
         ... = MP*∥ε h∥ + (ML +  ∥ε h∥) * ∥ η (L h + ∥h∥ • ε h)∥ : by simp[mul_div_cancel _ norm_h_non_zero] },
     }, -- end of bound_δ proof
     
-     
-    have norm_δ_nonneg : ∀ (t : E), (0:ℝ) ≤ (λ (h : E), ∥δ h∥) t :=
-    assume t, norm_nonneg,
-    simp,
-    apply squeeze_zero (λ h, ∥ δ h∥) (λ h, MP*∥ε h∥ + ( ML + ∥ε h ∥)*∥ η (L h + ∥h∥•ε h)∥) 0 norm_δ_nonneg bound_δ,
-    clear norm_δ_nonneg bound_δ, 
-
-    have limML : ((λ (x: E), ML) →_{0} ML) := tendsto_const_nhds,
-      
-    have lim_normE:= @lim_norm_zero E _,
-    have lim_ML_norm := tendsto_mul limML lim_normE,
-    simp at lim_ML_norm,
-
-    have lim1 : ((λ (h: E),  L h + ∥h∥ • ε h) →_{(0:E)} 0),
-    { 
-      have := squeeze_zero (λ (x : E), ∥L x∥) (λ (x : E), ML*∥x∥) 0,
-      simp[norm_nonneg, ineq_L] at this, clear ineq_L,
-      
-      simp[lim_ML_norm] at this,
-      rename this lim_norm_L,
-      have lim_L := (@tendsto_iff_norm_tendsto_zero _ _ _ _ L 0 0).2,
-      simp at lim_L,
-      specialize lim_L lim_norm_L,
-      
-      simpa using tendsto_add lim_L (tendsto_smul lim_normE lim_ε) },
-      
     
-    have lim2 := tendsto.comp lim1 lim_η, clear lim1,
-
-    have norm_reformulation := (@tendsto_iff_norm_tendsto_zero _ _ _ _ (λ (h: E),  η (L h + ∥h∥ • ε h)) 0 0 ).1,
-    simp at norm_reformulation,
-    
-    have lim3 : ((λ (h: E),  ∥ η (L h + ∥h∥ • ε h)∥) →_{0} (0)) :=
-    norm_reformulation lim2, clear norm_reformulation, clear lim2,
-    
-    have lim_norm_ε : (λ (e : E), ∥ε e∥)→_{0}0 := 
-    by simpa using (@tendsto_iff_norm_tendsto_zero _ _ _ _ ε 0 0 ).1 lim_ε,
-    have lim4 : (λ (x : E),  ML + ∥ε x∥)→_{0} ML := 
-    by simpa using tendsto_add limML lim_norm_ε,
-    
-    have lim5 : (λ (x : E), (∥ε x∥ + ML) * ∥η (L x + ∥x∥ • ε x)∥)→_{0}0 :=
-    by simpa using tendsto_mul lim4 lim3,
-    
-    have limMP : ((λ (x: E), MP) →_{0} MP) := tendsto_const_nhds,
-    
-    have lim6 := tendsto_mul limMP lim_norm_ε,
-    simp at lim6,
-
-    have lim7:= tendsto_add lim6 lim5,
-    simp at lim7,
-    
-    simp [lim7] } } }
+    apply squeeze_zero, 
+    exact assume t, norm_nonneg,
+    exact bound_δ, 
+    rw [show (0:ℝ) = 0 + 0, by simp],
+    apply tendsto_add _ _,
+    { apply_instance },
+    { have limMP : (λ (h : E), MP) →_{0} MP := tendsto_const_nhds,
+      simpa using tendsto_mul limMP (tendsto_iff_norm_tendsto_zero.1 lim_ε) },
+    { rw [show (0:ℝ) = ML*0, by simp],
+      apply tendsto_mul _ _,
+      { apply_instance },
+      { have limML : (λ (h : E), ML) →_{0} ML := tendsto_const_nhds,
+        simpa using tendsto_add limML (tendsto_iff_norm_tendsto_zero.1 lim_ε) },
+      { have lim1 := tendsto_add (lim_zero_bounded_linear_map ⟨lin_L , ML, ML_pos, ineq_L⟩) (tendsto_smul lim_norm_zero lim_ε),
+        simp at lim1,
+        have := tendsto.comp lim1 lim_η,
+        exact tendsto.comp this lim_norm_zero } },
+    } } 
 end
 
 end differential

@@ -2,20 +2,6 @@ import analysis.metric_space
 
 local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
 
-lemma abs_le_max_abs_abs {α : Type*} [decidable_linear_ordered_comm_group α] {a b c : α} :
-a ≤ b → b ≤ c → abs b ≤ max (abs a) (abs c) :=
-begin
-    intros hab hbc,
-    apply abs_le_of_le_of_neg_le,
-    { exact (calc
-        b ≤ c : hbc
-        ... ≤ abs c : le_abs_self _
-        ... ≤ max (abs a) (abs c): le_max_right _ _) },
-    { exact (calc
-        -b ≤ -a : neg_le_neg hab
-        ... ≤ abs a : neg_le_abs_self _
-        ... ≤ max (abs a) (abs c): le_max_left _ _) }
-end
 
 lemma squeeze {X : Type*} [metric_space X] (f g h : X → ℝ) (x₀ : X) (y : ℝ): 
 (∀ x : X, f x ≤ g x) → (∀ x : X, g x ≤ h x) → (f →_{x₀} y) → (h →_{x₀} y) → (g →_{x₀} y) :=
