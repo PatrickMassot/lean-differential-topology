@@ -1,11 +1,5 @@
 import analysis.real
-import algebra.group
 import algebra.linear_algebra.prod_module
-import analysis.metric_space
-import order.filter
-import analysis.topology.continuity
-import data.prod
-import tactic.norm_num
 
 import squeeze
 
