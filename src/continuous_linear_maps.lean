@@ -1,4 +1,5 @@
 import algebra.field
+import tactic.norm_num
 import norms
 
 noncomputable theory
