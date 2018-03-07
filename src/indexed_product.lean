@@ -58,12 +58,10 @@ instance has_mul [∀ i, has_mul $ f i] : has_mul (Π i : I, f i) :=
 ⟨λ x y, λ i, x i * y i⟩
 
 instance semigroup [∀ i, semigroup $ f i] : semigroup (Π i : I, f i) :=
-{ mul_assoc := assume a b c, by funext ; exact @semigroup.mul_assoc (f i) _ (a i) (b i) (c i),
-  ..indexed_product.has_mul }
+by lifted_instance [indexed_product.has_mul]
 
 instance comm_semigroup [∀ i, comm_semigroup $ f i] : comm_semigroup (Π i : I, f i) :=
-{ mul_comm := assume a b, by funext ; exact @comm_semigroup.mul_comm (f i) _ (a i) (b i),
-  ..indexed_product.semigroup }
+by lifted_instance [indexed_product.has_mul]
 
 instance has_one [∀ i, has_one $ f i] : has_one (Π i : I, f i) :=
 ⟨λ i, 1⟩
