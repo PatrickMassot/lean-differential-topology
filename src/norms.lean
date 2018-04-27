@@ -1,5 +1,5 @@
 import analysis.real
-import algebra.linear_algebra.prod_module
+import linear_algebra.prod_module
 
 import squeeze
 
@@ -80,9 +80,8 @@ end
 
 instance prod.normed_group {F : Type*} [normed_group F] : normed_group (G × F) :=
 { norm := λ x, max ∥x.1∥ ∥x.2∥,
-  dist_eq := assume x y, by { simp, repeat {rw norm_dist'}, simp },
-  ..prod.metric_space_max,
-  ..prod.add_comm_group }
+  dist_eq := assume x y, by { simp, repeat {rw norm_dist'}, simp } }
+  
 
 lemma norm_proj1_le (x : G × H) : ∥x.1∥ ≤ ∥x∥ :=
 begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[le_max_left], end
@@ -160,8 +159,7 @@ instance normed_top_group  : topological_add_group G  :=
     have := tendsto_add lim_negx lim_e,
     simp at this,
     simpa using filter.tendsto.comp this lim_norm_zero
-  end,
-  ..normed_top_monoid }
+  end }
 
 end normed_group
 
@@ -201,7 +199,6 @@ instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α ×
         ... ≤ (max (∥x.1∥) (∥x.2∥)) * (max (∥y.2∥) (∥y.1∥)) : by { apply max_mul_mul_le_max_mul_max; simp [norm_nonneg] }
         ... = (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by simp[max_comm]
         ... = (∥x∥*∥y∥) : rfl,
-  ..prod.ring,
   ..prod.normed_group }
 end normed_ring
 
