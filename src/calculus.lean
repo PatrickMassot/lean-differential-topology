@@ -60,7 +60,7 @@ split,
       clear fact1 lin_L ineq_L ML_pos ML lin_P ineq_P MP_pos MP cont_linPL δ TEf TEg f g lim_ε lim_η a,
       
       rw[smul_add, smul_smul],
-      congr_n 1,
+      congr' 1,
       apply (congr_arg (λ x, x • η (L h + ∥h∥ • ε h))),
             
       rw [←mul_div_assoc, mul_comm, mul_div_cancel],

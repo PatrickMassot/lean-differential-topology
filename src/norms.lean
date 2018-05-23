@@ -1,9 +1,6 @@
 import analysis.real
 import linear_algebra.prod_module
 
-import squeeze
-
-
 noncomputable theory
 
 local notation f `→_{`:50 a `}`:0 b := filter.tendsto f (nhds a) (nhds b)
@@ -106,6 +103,14 @@ end
 
 lemma lim_norm_zero  : ((λ g, ∥g∥) : G → ℝ) →_{0} 0 :=
 by simpa using lim_norm (0:G)
+
+lemma squeeze_zero {T : Type*} [metric_space T] (f g : T → ℝ) (t₀ : T) : 
+(∀ t : T, 0 ≤ f t) → (∀ t : T, f t ≤ g t) → (g →_{t₀} 0) → (f →_{t₀} 0) :=
+begin
+  intros _ _ g0,
+  apply tendsto_of_tendsto_of_tendsto_of_le_of_le (tendsto_const_nhds) g0;
+  simp [*]; exact filter.univ_mem_sets  
+end
 
 lemma norm_continuous {G : Type*} [normed_group G]: continuous ((λ g, ∥g∥) : G → ℝ) := 
 begin
