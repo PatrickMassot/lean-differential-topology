@@ -26,16 +26,12 @@ assume d0 ab c0, mul_le_mul_of_nonneg_right (div_le_div_of_le_of_pos ab c0) d0
 lemma norm_norm { e : E } : ∥∥e∥∥ = ∥e∥ := 
 abs_of_nonneg norm_nonneg
 
-theorem chain_rule (f : E → F) (g : F → G) (a : E) (L : E → F) (P : F → G)
-(D : is_differential f a L) (D' : is_differential g (f a) P) : is_differential (g ∘ f) a (P ∘ L) :=
-begin
-rcases D with ⟨cont_lin_L, ε, TEf, lim_ε⟩,
-rcases D' with ⟨cont_lin_P, η, TEg, lim_η⟩,
-unfold is_differential,
-have cont_linPL := is_bounded_linear_map.comp cont_lin_L cont_lin_P,
-split,
-{ exact cont_linPL },
-{ rcases cont_lin_P with ⟨lin_P , MP, MP_pos, ineq_P⟩,
+theorem chain_rule (f : E → F) (g : F → G) (a : E) (L : E → F) (P : F → G) :
+is_differential f a L → is_differential g (f a) P → is_differential (g ∘ f) a (P ∘ L) :=
+λ ⟨cont_lin_L, ε, TEf, lim_ε⟩ ⟨cont_lin_P, η, TEg, lim_η⟩,
+let cont_linPL := is_bounded_linear_map.comp cont_lin_L cont_lin_P in
+⟨cont_linPL, begin
+ rcases cont_lin_P with ⟨lin_P , MP, MP_pos, ineq_P⟩,
   rcases cont_lin_L with ⟨lin_L , ML, ML_pos, ineq_L⟩,
   
   let δ := λ h, if (h = 0) then 0 else  P (ε h) + (∥ L h + ∥h∥•ε h ∥/∥h∥)• η (L h + ∥h∥•ε h),
@@ -57,7 +53,7 @@ split,
       
       simp[δ, H, fact1], 
       -- now we only need computing and h ≠ 0
-      clear fact1 lin_L ineq_L ML_pos ML lin_P ineq_P MP_pos MP cont_linPL δ TEf TEg f g lim_ε lim_η a,
+      -- clear fact1 lin_L ineq_L ML_pos ML lin_P ineq_P MP_pos MP cont_linPL δ TEf TEg f g lim_ε lim_η a,
       
       rw[smul_add, smul_smul],
       congr' 1,
@@ -125,7 +121,7 @@ split,
         simp at lim1,
         have := tendsto.comp lim1 lim_η,
         exact tendsto.comp this lim_norm_zero } },
-    } } 
-end
+    } 
+end⟩
 
 end differential
