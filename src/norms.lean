@@ -1,5 +1,7 @@
 import analysis.real
 import linear_algebra.prod_module
+import algebra.pi_instances
+import metric_space_fintype_pi
 
 noncomputable theory
 
@@ -86,13 +88,16 @@ begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[
 lemma norm_proj2_le (x : G × H) : ∥x.2∥ ≤ ∥x∥ :=
 begin  have : ∥x∥ = max  (∥x.fst∥) ( ∥x.snd∥) := rfl, rw this, simp[le_max_right], end
 
+instance fintype.normed_group {ι : Type*} {α : ι → Type*} [fintype ι] [∀i, normed_group (α i)] :
+  normed_group (Πb, α b) :=
+{ norm := λf, finset.maxi finset.univ (λ b, ∥f b∥),
+  dist_eq := assume x y, by finish [norm_dist'] }
 
 lemma tendsto_iff_norm_tendsto_zero {f : G → H} {a : G} {b : H} : (f →_{a} b) ↔ ((λ e, ∥ f e - b ∥) →_{a} 0) :=
 begin
   simp only [norm_dist'.symm],
   exact tendsto_iff_dist_tendsto_zero
 end
-
 
 lemma lim_norm (x: G) : ((λ g, ∥g-x∥) : G → ℝ) →_{x} 0 :=
 begin
@@ -205,6 +210,12 @@ instance prod.normed_ring [normed_ring α] [normed_ring β] : normed_ring (α ×
         ... = (max (∥x.1∥) (∥x.2∥)) * (max (∥y.1∥) (∥y.2∥)) : by simp[max_comm]
         ... = (∥x∥*∥y∥) : rfl,
   ..prod.normed_group }
+/-
+instance fintype.normed_ring {ι : Type*} {α : ι → Type*} [fintype ι] [∀i, normed_ring (α i)] :
+  normed_ring (Πb, α b) :=
+{ norm_mul := assume x y, begin  sorry end,
+  ..fintype.normed_group }
+-/
 end normed_ring
 
 section normed_field
@@ -299,4 +310,14 @@ instance product_normed_space : normed_space α (E × F) :=
                by simp[smul_add],             
   ..prod.normed_group, 
   ..prod.vector_space }
+
+set_option trace.class_instances true
+
+example {ι : Type*} {E : ι → Type*} [fintype ι] [∀i, vector_space α (E i)] :
+  vector_space α (Πi, E i) := by apply_instance
+
+instance fintype.normed_space {ι : Type*} {E : ι → Type*} [fintype ι] [∀i, normed_space α (E i)] :
+  normed_space α (Πi, E i) := 
+{ norm_smul := λ s x, begin sorry end,
+  ..fintype.normed_group, }
   end normed_space
