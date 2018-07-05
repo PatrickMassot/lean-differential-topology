@@ -1,7 +1,7 @@
 import data.set.function
 
 import norms
-import tactic.simp_inter
+import tactic.easy
 
 noncomputable theory
 local attribute [instance] classical.prop_decidable 
@@ -85,11 +85,11 @@ begin
   have : ∀ (x ∈ φ.domain ∩ U) (y ∈ φ.domain ∩ V), φ x = φ y → x = y, 
   { intros x x_in y y_in,
     apply φ.injectivity,
-    simp_inter },
+    easy },
   have : φ '' (φ.domain ∩ V) ∩ φ '' (φ.domain ∩ U) = φ '' (φ.domain ∩ V ∩ (φ.domain ∩ U))
     := image_inter_on this,
   have tauto : φ.domain ∩ V ∩ (φ.domain ∩ U) = φ.domain ∩ U ∩ V, 
-    by simp_inter,
+    by easy,
   rwa [inter_comm, tauto] at this
 end
 
@@ -124,7 +124,7 @@ begin
   { have : y ∈ φ.range := image_subset φ (inter_subset_left _ _) H,
     simp [*] },
   have : φ.domain ∩ ψ.domain ∩ φ.domain = φ.domain ∩ ψ.domain, 
-    by simp_inter,
+    by easy,
   simp [this, H]
 end
 
@@ -197,7 +197,7 @@ begin
     change φ (ψ.inv (ψ x)) = φ x,
     rwa chart_inv_chart },
   have comm : ψ.domain ∩ φ.domain ∩ χ.domain = φ.domain ∩ ψ.domain ∩ χ.domain,
-    by simp_inter,
+    by easy,
   rwa [h, comm] at op
 end
 
@@ -215,10 +215,10 @@ begin
       have H : φ '' (φ.domain ∩ ψ.domain ∩ χ.domain) ⊆ φ '' (φ.domain ∩ χ.domain), 
       { apply image_subset,
         intros x h,
-        simp_inter },
+        easy },
       existsi [φ '' (φ.domain ∩ ψ.domain ∩ χ.domain), H],
       exact ⟨open_triple_intersection X (h₁ ψ ψ_in_b).1 (h₁ ψ ψ_in_b).2 (h₂ ψ ψ_in_b).1, 
-             ⟨y, by { simp_inter}⟩⟩ },
+             ⟨y, by { easy}⟩⟩ },
   { intros x x_in,
     rcases x_in with ⟨y, ⟨y_in_φ, y_in_χ⟩, φ_y⟩,
     rcases b.covering y with ⟨ψ, ψ_in_b, y_in_ψ⟩,
@@ -226,7 +226,7 @@ begin
     rcases h₂ ψ ψ_in_b with ⟨⟨op_ψ_χ, smooth_ψ_χ⟩, ⟨op_χ_ψ, smooth_χ_ψ⟩⟩,
     
     have : y ∈ φ.domain ∩ ψ.domain ∩ χ.domain,
-      by simp_inter,
+      by easy,
     let W := φ '' (φ.domain ∩ ψ.domain ∩ χ.domain),
     have x_in_W : x ∈ W := φ_y ▸ mem_image_of_mem φ this,
     have W_nhds_x : W ∈ (nhds x).sets :=
@@ -239,7 +239,7 @@ begin
     { apply smooth_ψ_χ,
       existsi y,
       split,
-      { simp_inter },
+      { easy },
       { rw ←φ_y,
         change ψ y = ψ (chart.inv φ (φ y)),
         rwa chart_inv_chart } } } 
