@@ -182,8 +182,12 @@ structure smooth_atlas :=
 
 lemma open_triple_intersection {φ ψ χ : chart X} :
 smooth_compatible φ ψ → smooth_compatible ψ φ → smooth_compatible ψ χ → is_open (φ '' (φ.domain ∩ ψ.domain ∩ χ.domain))
-| ⟨op_φ_ψ, smooth_φ_ψ⟩ ⟨op_ψ_φ, smooth_ψ_φ⟩ ⟨op_ψ_χ, smooth_ψ_χ⟩ :=
-begin  
+ :=
+begin
+  intros h h' h'',
+  rcases h with ⟨op_φ_ψ, smooth_φ_ψ⟩,
+  rcases h' with ⟨op_ψ_φ, smooth_ψ_φ⟩,
+  rcases h'' with ⟨op_ψ_χ, smooth_ψ_χ⟩,
   have op := is_open_inter op_ψ_φ op_ψ_χ,
   rw chart.image_inter at op,
 

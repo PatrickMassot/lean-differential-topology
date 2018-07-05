@@ -1,11 +1,7 @@
 import data.set.basic
 
-
-section
-open tactic monad expr
 meta def easy : tactic unit :=
-`[try { ext } , try { dsimp at * }, all_goals { tauto }]
-end
+`[all_goals { try { ext }, try { dsimp at * }, tauto }]
 
 section examples
 variables {α : Type*} (a b c : set α) (x : α)
