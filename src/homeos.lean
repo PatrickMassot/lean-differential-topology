@@ -13,20 +13,6 @@ theorem equiv.left_inverse (f : equiv α β) : left_inverse f⁻¹ f := f.left_i
 
 theorem equiv.right_inverse (f : equiv α β) : function.right_inverse f⁻¹ f := f.right_inv
 
-lemma equiv.image_eq_preimage {α β} (e : α ≃ β) (s : set α) : e '' s = e.symm ⁻¹' s := 
-ext $ assume x, mem_image_iff_of_inverse e.left_inv e.right_inv
-
-lemma equiv.subset_image {α β} (e : α ≃ β) (s : set α) (t : set β) : t ⊆ e '' s ↔ e.symm '' t ⊆ s :=
-by rw [image_subset_iff, e.image_eq_preimage]
-
-lemma equiv.symm_image_image (f : equiv α β) (s : set α) : f.symm '' (f '' s) = s :=
-by rw [←image_comp] ; simpa using image_id s
-
-lemma equiv.image_compl (f : equiv α β) (s : set α) :
-  f '' -s = -(f '' s) :=
-image_compl_eq f.bijective
-
-
 structure homeo (α β) [topological_space α] [topological_space β] extends equiv α β :=
 (fun_con : continuous to_fun)
 (inv_con : continuous inv_fun)

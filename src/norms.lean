@@ -317,7 +317,7 @@ example {ι : Type*} {E : ι → Type*} [fintype ι] [∀i, vector_space α (E i
   vector_space α (Πi, E i) := by apply_instance
 
 instance fintype.normed_space {ι : Type*} {E : ι → Type*} [fintype ι] [∀i, normed_space α (E i)] :
-  normed_space α (Πi, E i) := 
-{ norm_smul := λ s x, begin sorry end,
-  ..fintype.normed_group, }
+  normed_space α (Πi, E i) := sorry 
+/-{ norm_smul := λ s x, begin sorry end,
+  ..fintype.normed_group, }-/
   end normed_space
