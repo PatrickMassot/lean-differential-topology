@@ -1,8 +1,6 @@
 import logic.function data.set.function
 import tactic.interactive
 
-import analysis.topology.topological_space
-
 import tactic.easy
 
 meta def unfold_comp : tactic unit :=
@@ -146,5 +144,25 @@ lemma self_symm_val {f : pequiv α β} {x : β} (h :x ∈ f.range) :
 begin
   change f.to_fun (f.inv_fun x) = x,
   rwa to_inv
+end
+
+lemma image_eq_preimage (f : pequiv α β) (U : set α) : f '' (U ∩ f.domain) = f.inv_fun ⁻¹' (U ∩ f.domain) ∩ f.range :=
+begin
+  ext x,
+  split,
+  { rintro ⟨y, y_in, f_y⟩,
+    split ; rw ←f_y,
+    { rw mem_preimage_eq,
+      unfold_coes,
+      rwa inv_to,
+      easy },
+    { apply domain_to_range,
+      easy } },
+  { rintro ⟨x_in, x_in'⟩,
+    rw mem_preimage_eq at x_in,
+    existsi f.inv_fun x,
+    unfold_coes,
+    rw to_inv,
+    easy },  
 end
 end pequiv
