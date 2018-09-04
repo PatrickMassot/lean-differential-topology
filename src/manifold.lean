@@ -248,7 +248,7 @@ begin
         rwa chart_inv_chart } } } 
 end
 
-def smooth_atlas_eqv : setoid (smooth_atlas X) := 
+instance smooth_atlas_eqv : setoid (smooth_atlas X) := 
 ⟨λ a b, ∀ (φ ∈ a.charts) (ψ ∈ b.charts), 
   (smooth_compatible φ ψ) ∧ (smooth_compatible ψ φ),
   begin
@@ -268,14 +268,38 @@ def smooth_atlas_eqv : setoid (smooth_atlas X) :=
       all_goals { simp * {contextual := tt} } }
   end⟩
 
-def smooth_atlas_class.to_topology (atlas_class : quotient $ smooth_atlas_eqv X) : topological_space X :=
-sorry
+def smooth_atlas_class := quotient $ smooth_atlas_eqv X
+
+variable {X}
+def atlases (atlas_class : smooth_atlas_class X) : set (smooth_atlas X) :=
+{ a | ⟦a⟧ = atlas_class }
+
+def charts (atlas_class : smooth_atlas_class X) : set (chart X) :=
+⋃₀ (smooth_atlas.charts '' atlases atlas_class)
+
+def chart_domains (atlas_class : smooth_atlas_class X) : set (set X) :=
+chart.domain '' (charts atlas_class)
 
 open topological_space
+
+def smooth_atlas_class.to_topology (atlas_class : smooth_atlas_class X) : topological_space X :=
+generate_from (chart_domains atlas_class)
+
+variable (X)
 class smooth_manifold :=
 (dim : ℕ)
-(atlas_class : quotient $ smooth_atlas_eqv X)
-(is_t2 : @t2_space X (smooth_atlas_class.to_topology X atlas_class))
-(is_second_countable : @second_countable_topology X (smooth_atlas_class.to_topology X atlas_class))
+(atlas_class : smooth_atlas_class X)
+(is_t2 : @t2_space X (smooth_atlas_class.to_topology atlas_class))
+(is_second_countable : @second_countable_topology X (smooth_atlas_class.to_topology atlas_class))
 
 end atlases
+
+namespace smooth_manifold
+variables (X : Type) [inhabited X] [smooth_manifold X]
+
+def charts := charts (smooth_manifold.atlas_class X)
+
+def domains := chart.domain '' charts X
+
+def topology := smooth_atlas_class.to_topology (smooth_manifold.atlas_class X)
+end smooth_manifold
