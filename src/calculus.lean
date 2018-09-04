@@ -1,7 +1,6 @@
 import analysis.real 
 import analysis.limits
-import norms
-import continuous_linear_maps
+import analysis.bounded_linear_maps
 
 noncomputable theory
 local attribute [instance] classical.prop_decidable
@@ -24,12 +23,12 @@ assume d0 ab c0, mul_le_mul_of_nonneg_right (div_le_div_of_le_of_pos ab c0) d0
 
 @[simp]
 lemma norm_norm { e : E } : ∥∥e∥∥ = ∥e∥ := 
-abs_of_nonneg norm_nonneg
+abs_of_nonneg $ norm_nonneg e
 
 theorem chain_rule (f : E → F) (g : F → G) (a : E) (L : E → F) (P : F → G) :
 is_differential f a L → is_differential g (f a) P → is_differential (g ∘ f) a (P ∘ L) :=
 λ ⟨cont_lin_L, ε, TEf, lim_ε⟩ ⟨cont_lin_P, η, TEg, lim_η⟩,
-let cont_linPL := is_bounded_linear_map.comp cont_lin_L cont_lin_P in
+let cont_linPL := is_bounded_linear_map.comp cont_lin_P cont_lin_L in
 ⟨cont_linPL, begin
  rcases cont_lin_P with ⟨lin_P , MP, MP_pos, ineq_P⟩,
   rcases cont_lin_L with ⟨lin_L , ML, ML_pos, ineq_L⟩,
@@ -61,7 +60,7 @@ let cont_linPL := is_bounded_linear_map.comp cont_lin_L cont_lin_P in
             
       rw [←mul_div_assoc, mul_comm, mul_div_cancel],
       
-      exact mt norm_zero_iff_zero.1 H },
+      exact mt (norm_eq_zero _).1 H },
   }, 
   { -- prove δ →_0 0
     apply tendsto_iff_norm_tendsto_zero.2,
@@ -76,22 +75,22 @@ let cont_linPL := is_bounded_linear_map.comp cont_lin_L cont_lin_P in
         apply add_nonneg'; apply mul_nonneg,
 
         exact le_of_lt MP_pos,
-        exact norm_nonneg,
-        exact add_nonneg' (le_of_lt ML_pos) norm_nonneg,
-        exact norm_nonneg },
+        exact norm_nonneg _,
+        exact add_nonneg' (le_of_lt ML_pos) (norm_nonneg _),
+        exact (norm_nonneg _) },
       { -- h ≠ 0 case
         simp [δ],
         simp [H],
 
-        have norm_h_pos : ∥h∥ > 0 := norm_pos_iff.2 H,
+        have norm_h_pos : ∥h∥ > 0 := (norm_pos_iff h).2 H,
         have norm_h_non_zero : ∥h∥ ≠ 0 := ne_of_gt norm_h_pos,
         have prelim1 : ∥∥L h + ∥h∥ • ε h∥ / ∥h∥∥ = ∥L h + ∥h∥ • ε h∥ / ∥h∥ := 
-          abs_of_nonneg (div_nonneg_of_nonneg_of_pos norm_nonneg norm_h_pos),
+          abs_of_nonneg (div_nonneg_of_nonneg_of_pos (norm_nonneg _) norm_h_pos),
         have prelim2 : ∥L h + ∥h∥ • ε h∥/∥h∥*∥η (L h + ∥h∥ • ε h)∥ ≤ (∥L h∥ + ∥∥h∥ • ε h∥)/∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ :=
-          div_mul_le_div_mul_left norm_nonneg (norm_triangle _ _) norm_h_pos,
+          div_mul_le_div_mul_left (norm_nonneg _) (norm_triangle _ _) norm_h_pos,
         have prelim3 : (∥L h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ ≤
                 (ML * ∥h∥ + ∥h∥ * ∥ε h∥) / ∥h∥ * ∥η (L h + ∥h∥ • ε h)∥ := 
-          div_mul_le_div_mul_left norm_nonneg (add_le_add_right (ineq_L h) _) norm_h_pos,
+          div_mul_le_div_mul_left (norm_nonneg _) (add_le_add_right (ineq_L h) _) norm_h_pos,
 
         exact calc 
         ∥P (ε h) + (∥L h + ∥h∥ • ε h∥ / ∥h∥) • η (L h + ∥h∥ • ε h)∥ 
@@ -105,7 +104,7 @@ let cont_linPL := is_bounded_linear_map.comp cont_lin_L cont_lin_P in
     
     
     apply squeeze_zero, 
-    exact assume t, norm_nonneg,
+    exact assume t, (norm_nonneg _),
     exact bound_δ, 
     rw [show (0:ℝ) = 0 + 0, by simp],
     apply tendsto_add _ _,

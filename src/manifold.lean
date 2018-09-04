@@ -1,6 +1,5 @@
 import data.set.function
-
-import norms
+import analysis.normed_space
 import tactic.easy
 
 noncomputable theory
